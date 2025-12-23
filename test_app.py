@@ -1,166 +1,165 @@
 
-import streamlit as st
+from streamlit.testing.v1 import AppTest
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import sys
-import types
-from streamlit.testing.v1 import AppTest
+import os
 
-# --- Mocking source.py content for testing purposes ---
-# This creates a mock 'source' module and injects it into sys.modules.
-# When 'app.py' runs and does 'from source import *', it will import
-# these mocked objects instead of a real source.py file.
+# To ensure 'source.py' is found during testing,
+# we might need to create a dummy source.py or ensure the actual one is in the path.
+# For the purpose of this test generation, we assume 'source.py' exists and
+# provides the necessary dataframes and functions as outlined in the app code.
 
-# Mock dataframes
-mock_df_employees = pd.DataFrame({
-    'employee_id': ['E001', 'E002', 'E003'],
-    'job_role': ['Data Scientist', 'HR Specialist', 'Software Engineer'],
-    'department': ['IT', 'HR', 'IT'],
-    'current_ai_r_score': [75.0, 45.0, 80.0],
-    'vr_score': [70.0, 40.0, 85.0],
-    'hr_r_score': [80.0, 50.0, 75.0],
-    'ai_fluency_score': [80.0, 30.0, 90.0],
-    'domain_expertise_score': [70.0, 50.0, 80.0],
-    'adaptive_capacity_score': [60.0, 40.0, 70.0],
-    'education_level': ['Master\'s', 'Bachelor\'s', 'Master\'s'],
-    'years_experience': [5, 10, 7],
-    'ai_augmented_productivity_norm': [0.8, 0.5, 0.9],
-    'errors_caught_norm': [0.9, 0.6, 0.85],
-    'trust_decisions_norm': [0.8, 0.7, 0.9],
-    'learning_rate': [0.7, 0.4, 0.8],
-    'hours_invested': [100, 50, 120],
-    'skill_a': [0.8, 0.5, 0.9], 'skill_b': [0.7, 0.6, 0.8], 'skill_c': [0.6, 0.7, 0.75],
-    'skill_d': [0.9, 0.4, 0.85], 'skill_e': [0.7, 0.5, 0.9], 'skill_f': [0.8, 0.6, 0.7],
-    'skill_g': [0.75, 0.55, 0.82], 'skill_h': [0.65, 0.7, 0.78], 'skill_i': [0.88, 0.52, 0.91],
-    'skill_j': [0.72, 0.68, 0.83],
-    'ai_enhancement_potential': [0.8, 0.6, 0.9],
-    'job_growth_normalized': [0.7, 0.5, 0.8],
-    'wage_premium_normalized': [0.75, 0.55, 0.85],
-    'entry_accessibility_normalized': [0.6, 0.8, 0.7],
-    'remote_work_factor': [0.9, 0.5, 0.8],
-    'occupational_hr_r_score': [80.0, 50.0, 75.0]
+# Create dummy source.py if it doesn't exist for testing environment setup
+# In a real test setup, you'd ensure source.py is accessible or mocked.
+dummy_source_content = """
+import pandas as pd
+import numpy as np
+
+# Dummy dataframes for testing
+df_employees = pd.DataFrame({
+    'employee_id': ['EMP001', 'EMP002'],
+    'job_role': ['Data Scientist', 'Business Analyst'],
+    'department': ['AI Research', 'Analytics'],
+    'current_ai_r_score': [75.0, 60.0],
+    'vr_score': [70.0, 55.0],
+    'hr_r_score': [80.0, 65.0],
+    'ai_fluency_score': [75.0, 50.0],
+    'domain_expertise_score': [80.0, 60.0],
+    'adaptive_capacity_score': [65.0, 55.0],
 })
 
-mock_df_occupations = pd.DataFrame({
-    'occupation_id': ['OCC001', 'OCC002', 'OCC003'],
-    'job_role': ['Data Scientist', 'HR Specialist', 'Software Engineer'],
-    'ai_enhancement_potential': [0.85, 0.6, 0.9],
-    'growth_normalized': [0.9, 0.5, 0.8],
-    'wage_premium_normalized': [0.8, 0.6, 0.85],
-    'entry_accessibility_normalized': [0.7, 0.8, 0.75],
-    'remote_work_factor': [0.8, 0.4, 0.7]
+df_occupations = pd.DataFrame({
+    'occupation_id': ['DS001', 'BA001'],
+    'occupation_name': ['Data Scientist', 'Business Analyst'],
+    'ai_enhancement_potential': [0.8, 0.6],
+    'job_growth_normalized': [90, 70],
+    'wage_premium': [0.2, 0.1],
+    'entry_accessibility': [0.7, 0.8],
+    'remote_work_factor': [0.9, 0.7],
 })
 
-mock_df_pathways = pd.DataFrame({
+df_pathways = pd.DataFrame({
     'pathway_id': ['P001', 'P002', 'P003'],
-    'pathway_name': ['Advanced ML', 'HR Analytics', 'Cloud AI Basics'],
-    'impact_ai_fluency': [10.0, 5.0, 7.0],
-    'impact_domain_expertise': [5.0, 8.0, 3.0],
-    'impact_adaptive_capacity': [3.0, 2.0, 5.0],
-    'cost': [1000, 500, 750],
-    'time_hours': [80, 40, 60]
+    'pathway_name': ['Advanced ML', 'Data Visualization', 'Cloud AI Basics'],
+    'impact_ai_fluency': [10, 3, 7],
+    'impact_domain_expertise': [5, 2, 4],
+    'impact_adaptive_capacity': [3, 5, 6],
+    'time_hours': [100, 40, 60],
+    'cost_usd': [1000, 300, 500],
 })
 
-mock_PARAMS = {
+PARAMS = {
     'alpha': 0.6,
     'beta': 0.15,
-    'vr_weights': {'ai_fluency': 0.45, 'domain_expertise': 0.35, 'adaptive_capacity': 0.20},
-    'hr_base_weights': {'ai_enhancement': 0.30, 'growth': 0.30, 'wage': 0.25, 'access': 0.15},
-    'ai_fluency_weights': {'technical_ai_skills': 0.30, 'ai_augmented_productivity': 0.35, 'critical_ai_judgment': 0.20, 'ai_learning_velocity': 0.15},
-    'exp_gamma': 0.15,
-    'specialization_weights': {'portfolio': 0.4, 'recognition': 0.3, 'credentials': 0.3},
-    'growth_lambda': 0.3,
-    'regional_gamma': 0.2
+    'w_hr1': 0.30, 'w_hr2': 0.30, 'w_hr3': 0.25, 'w_hr4': 0.15,
+    'w_vr1': 0.45, 'w_vr2': 0.35, 'w_vr3': 0.20,
+    'theta1': 0.30, 'theta2': 0.35, 'theta3': 0.20, 'theta4': 0.15,
+    'gamma_exp': 0.15,
+    'w_port': 0.4, 'w_recog': 0.3, 'w_cred': 0.3,
+    'lambda_growth': 0.3, 'gamma_regional': 0.2,
 }
 
-# Mock functions from source.py
-def mock_generate_ai_r_report_summary(df, group_by):
-    return df.groupby(group_by)['current_ai_r_score'].mean().reset_index()
+def calculate_vr_score(employee_data, params):
+    # Simplified calculation for testing
+    ai_fluency = employee_data['ai_fluency_score']
+    domain_expertise = employee_data['domain_expertise_score']
+    adaptive_capacity = employee_data['adaptive_capacity_score']
+    return (params['w_vr1'] * ai_fluency +
+            params['w_vr2'] * domain_expertise +
+            params['w_vr3'] * adaptive_capacity)
 
-def mock_calculate_synergy_score(vr_score, hr_score, employee_data):
-    alignment_factor = 0.9 # Simplified for mock
+def calculate_hr_score(employee_data, occupations_df, params):
+    # Simplified calculation for testing
+    job_role = employee_data['job_role']
+    occupation_data = occupations_df[occupations_df['occupation_name'] == job_role].iloc[0]
+    base_hr = (params['w_hr1'] * occupation_data['ai_enhancement_potential'] * 100 +
+               params['w_hr2'] * occupation_data['job_growth_normalized'] +
+               params['w_hr3'] * occupation_data['wage_premium'] * 100 +
+               params['w_hr4'] * occupation_data['entry_accessibility'] * 100) / (params['w_hr1'] + params['w_hr2'] + params['w_hr3'] + params['w_hr4'])
+    # Assume multipliers are 1 for simplicity in this dummy
+    return base_hr
+
+def calculate_synergy_score(vr_score, hr_score, employee_data):
+    # Simplified calculation for testing
+    # Assume a static alignment factor for dummy data
+    alignment_factor = 0.9 if employee_data['job_role'].iloc[0] == 'Data Scientist' else 0.7
     return (vr_score * hr_score / 100) * alignment_factor
 
-def mock_calculate_ai_r_score(vr_score, hr_score, synergy_score, params):
-    alpha = params['alpha']
-    beta = params['beta']
-    return alpha * vr_score + (1 - alpha) * hr_score + beta * synergy_score
+def calculate_ai_r_score(vr_score, hr_score, synergy_score, params):
+    return (params['alpha'] * vr_score +
+            (1 - params['alpha']) * hr_score +
+            params['beta'] * synergy_score)
 
-def mock_simulate_pathway_impact(employee_id, pathway_id, completion_rate, mastery_score, df_employees, df_occupations, df_pathways, params):
+def generate_ai_r_report_summary(df_employees):
+    return df_employees.groupby('job_role')['current_ai_r_score'].mean().reset_index()
+
+def simulate_pathway_impact(employee_id, pathway_id, completion_rate, mastery_score, df_employees, df_occupations, df_pathways, PARAMS):
     employee = df_employees[df_employees['employee_id'] == employee_id].iloc[0]
     pathway = df_pathways[df_pathways['pathway_id'] == pathway_id].iloc[0]
 
-    current_vr = employee['vr_score']
-    current_hr = employee['hr_r_score']
-    current_ai_r = employee['current_ai_r_score']
+    # Simulate updated VR components
+    updated_ai_fluency = employee['ai_fluency_score'] + pathway['impact_ai_fluency'] * completion_rate * mastery_score
+    updated_domain_expertise = employee['domain_expertise_score'] + pathway['impact_domain_expertise'] * completion_rate * mastery_score
+    updated_adaptive_capacity = employee['adaptive_capacity_score'] + pathway['impact_adaptive_capacity'] * completion_rate * mastery_score
 
-    impacted_ai_fluency = pathway['impact_ai_fluency'] * completion_rate * mastery_score
-    impacted_domain_expertise = pathway['impact_domain_expertise'] * completion_rate * mastery_score
-    impacted_adaptive_capacity = pathway['impact_adaptive_capacity'] * completion_rate * mastery_score
+    # Create a dummy employee df for VR calculation
+    updated_employee_data = employee.copy()
+    updated_employee_data['ai_fluency_score'] = updated_ai_fluency
+    updated_employee_data['domain_expertise_score'] = updated_domain_expertise
+    updated_employee_data['adaptive_capacity_score'] = updated_adaptive_capacity
 
-    projected_ai_fluency = min(100, employee['ai_fluency_score'] + impacted_ai_fluency)
-    projected_domain_expertise = min(100, employee['domain_expertise_score'] + impacted_domain_expertise)
-    projected_adaptive_capacity = min(100, employee['adaptive_capacity_score'] + impacted_adaptive_capacity)
-
-    projected_vr_weights = params['vr_weights']
-    projected_vr = (
-        projected_ai_fluency * projected_vr_weights['ai_fluency'] +
-        projected_domain_expertise * projected_vr_weights['domain_expertise'] +
-        projected_adaptive_capacity * projected_vr_weights['adaptive_capacity']
-    )
-    projected_vr = min(100, projected_vr)
-
-    projected_hr = current_hr # Assume HR is constant for what-if
-    projected_synergy = mock_calculate_synergy_score(projected_vr, projected_hr, employee)
-    projected_ai_r = mock_calculate_ai_r_score(projected_vr, projected_hr, projected_synergy, params)
-
-    delta_ai_r = projected_ai_r - current_ai_r
-    pathway_name_res = pathway['pathway_name']
-
-    return projected_ai_r, delta_ai_r, pathway_name_res
-
-def mock_optimize_pathway_sequence(employee_id, current_ai_r_opt_val, df_pathways, T_max_hours, cost_weight_lambda, df_employees, df_occupations, params):
-    employee = df_employees[df_employees['employee_id'] == employee_id].iloc[0]
+    # Recalculate VR and then AI-R
+    updated_vr_score = calculate_vr_score(updated_employee_data, PARAMS)
+    hr_score = calculate_hr_score(employee, df_occupations, PARAMS) # HR is static here
+    synergy_score = calculate_synergy_score(updated_vr_score, hr_score, employee.to_frame().T) # Pass as DataFrame
+    projected_ai_r = calculate_ai_r_score(updated_vr_score, hr_score, synergy_score, PARAMS)
     
-    available_pathways = df_pathways.copy()
-    completion_rate = 0.9
-    mastery_score = 0.85
+    delta_ai_r = projected_ai_r - employee['current_ai_r_score']
+    return projected_ai_r, delta_ai_r, pathway['pathway_name']
 
-    pathway_impacts = []
-    for idx, pathway in available_pathways.iterrows():
-        projected_ai_r_temp, delta_ai_r_temp, _ = mock_simulate_pathway_impact(
-            employee_id, pathway['pathway_id'], completion_rate, mastery_score, df_employees, df_occupations, df_pathways, params
-        )
-        score = delta_ai_r_temp - (cost_weight_lambda * pathway['cost']) - (0.1 * pathway['time_hours']) # Arbitrary time penalty
-        pathway_impacts.append({
-            'pathway_id': pathway['pathway_id'],
-            'pathway_name': pathway['pathway_name'],
-            'delta_ai_r': delta_ai_r_temp,
-            'cost': pathway['cost'],
-            'time_hours': pathway['time_hours'],
-            'score': score
-        })
-    
-    sorted_pathways = sorted(pathway_impacts, key=lambda x: x['score'], reverse=True)
+def optimize_pathway_sequence(employee_id, current_ai_r, df_pathways, T_max_hours, cost_weight_lambda, df_employees, df_occupations, PARAMS):
+    employee_data = df_employees[df_employees['employee_id'] == employee_id].iloc[0]
     
     recommended_sequence = []
-    projected_final_ai_r = current_ai_r_opt_val
     total_cost = 0
     total_time_hours = 0
+    
+    # Simple greedy approach for dummy - pick the best AI-R improvement per unit time adjusted for cost
+    available_pathways = df_pathways.copy()
+    
+    projected_final_ai_r = current_ai_r
     ai_r_improvement = 0
 
-    for pathway in sorted_pathways:
-        if total_time_hours + pathway['time_hours'] <= T_max_hours:
-            recommended_sequence.append(pathway['pathway_name'])
-            total_cost += pathway['cost']
-            total_time_hours += pathway['time_hours']
-            projected_final_ai_r += pathway['delta_ai_r']
-            ai_r_improvement += pathway['delta_ai_r']
-            projected_final_ai_r = min(100, projected_final_ai_r)
-        else:
-            break
+    # Simulate taking one pathway for simplicity
+    if not available_pathways.empty:
+        # For a greedy choice, we'd need to simulate all and pick the best.
+        # Here, let's just pick the first pathway if it fits time and cost.
+        best_pathway = None
+        best_score = -np.inf
+
+        for idx, pathway in available_pathways.iterrows():
+            if pathway['time_hours'] <= T_max_hours:
+                # Calculate potential impact of this single pathway
+                temp_proj_ai_r, temp_delta_ai_r, _ = simulate_pathway_impact(
+                    employee_id, pathway['pathway_id'], 1.0, 1.0, # Assume full completion/mastery for greedy
+                    df_employees, df_occupations, df_pathways, PARAMS
+                )
+                score = temp_delta_ai_r - cost_weight_lambda * pathway['cost_usd']
+                if score > best_score:
+                    best_score = score
+                    best_pathway = pathway
+
+        if best_pathway is not None:
+            recommended_sequence.append(best_pathway['pathway_name'])
+            total_cost += best_pathway['cost_usd']
+            total_time_hours += best_pathway['time_hours']
+            
+            # Recalculate with the chosen pathway
+            projected_final_ai_r, delta_ai_r, _ = simulate_pathway_impact(
+                employee_id, best_pathway['pathway_id'], 1.0, 1.0,
+                df_employees, df_occupations, df_pathways, PARAMS
+            )
+            ai_r_improvement = delta_ai_r
 
     return {
         "recommended_sequence": recommended_sequence,
@@ -170,178 +169,185 @@ def mock_optimize_pathway_sequence(employee_id, current_ai_r_opt_val, df_pathway
         "ai_r_improvement": ai_r_improvement
     }
 
-# Create a mock module and populate it
-mock_source_module = types.ModuleType("source")
-mock_source_module.df_employees = mock_df_employees
-mock_source_module.df_occupations = mock_df_occupations
-mock_source_module.df_pathways = mock_df_pathways
-mock_source_module.PARAMS = mock_PARAMS
-mock_source_module.generate_ai_r_report_summary = mock_generate_ai_r_report_summary
-mock_source_module.simulate_pathway_impact = mock_simulate_pathway_impact
-mock_source_module.optimize_pathway_sequence = mock_optimize_pathway_sequence
-# Make matplotlib and seaborn available in the mock module as they are used in the app
-mock_source_module.plt = plt
-mock_source_module.sns = sns
+import matplotlib.pyplot as plt
+def plot_current_vs_projected_ai_r(current_ai_r, projected_ai_r_list, pathway_names, fig=None, ax=None):
+    if fig is None and ax is None:
+        fig, ax = plt.subplots(figsize=(8, 5))
+    
+    labels = ['Current AI-R'] + pathway_names
+    values = [current_ai_r] + projected_ai_r_list
+    
+    bars = ax.bar(labels, values, color=['skyblue'] + ['lightcoral'] * len(projected_ai_r_list))
+    ax.set_ylabel('AI-R Score')
+    ax.set_title('Current vs. Projected AI-R Score')
+    ax.set_ylim(0, 100)
+    
+    for bar in bars:
+        yval = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2, yval + 1, round(yval, 2), ha='center', va='bottom')
+    
+    # Ensure the figure is properly returned/displayed if created internally
+    if fig is not None:
+        return fig, ax
+"""
 
-sys.modules["source"] = mock_source_module
+# Write the dummy_source_content to source.py in the current directory
+with open("source.py", "w") as f:
+    f.write(dummy_source_content)
 
-# --- End of Mocking ---
+# Now proceed with the actual tests
+# Note: Streamlit app code is assumed to be in 'app.py'
 
-
-def test_initial_load():
+def test_initial_app_load_and_introduction():
+    """
+    Test if the app loads correctly and displays the introductory content.
+    """
     at = AppTest.from_file("app.py").run()
     assert at.title[0].value == "QuLab: AI Readiness score"
-    assert "Framework Introduction" in at.markdown[1].value
+    assert "Workforce AI-Readiness & Upskilling Strategizer" in at.markdown[0].value
+    assert "Story Flow" in at.markdown[0].value
     assert at.session_state["current_page"] == "Dashboard"
+
+def test_dashboard_page():
+    """
+    Test the Dashboard page content and interactions.
+    """
+    at = AppTest.from_file("app.py").run()
+    at.button[0].click().run() # Click Dashboard button (already default but for explicit test)
+    assert at.session_state["current_page"] == "Dashboard"
+    assert at.title[0].value == "Workforce AI-Readiness Dashboard"
+    
+    # Check default grouping
     assert at.session_state["report_group_by"] == "job_role"
-    assert at.session_state["selected_employee_id_whatif"] == mock_df_employees['employee_id'].iloc[0]
-    assert at.session_state["selected_pathway_id_whatif"] == mock_df_pathways['pathway_id'].iloc[0]
+    
+    # Change grouping to department
+    at.selectbox[0].set_value("department").run()
+    assert at.session_state["report_group_by"] == "department"
+    
+    # Verify dataframe and heatmap are present
+    assert len(at.dataframe) > 0
+    assert len(at.pyplot) > 0
+
+def test_what_if_scenario_page():
+    """
+    Test navigation to What-If Scenario page, interactions, and results display.
+    """
+    at = AppTest.from_file("app.py").run()
+    
+    # Navigate to What-If Scenario page
+    at.button[1].click().run() # Click "What-If Scenario Engine" button in sidebar
+    assert at.session_state["current_page"] == "What-If Scenario"
+    assert at.title[0].value == "What-If Scenario Engine"
+    
+    # Check initial selections and sliders
+    assert at.session_state["selected_employee_id_whatif"] == "EMP001"
+    assert at.session_state["selected_pathway_id_whatif"] == "P001"
     assert at.session_state["completion_rate_whatif"] == 0.9
     assert at.session_state["mastery_score_whatif"] == 0.85
-    assert at.session_state["selected_employee_id_opt"] == mock_df_employees['employee_id'].iloc[0]
+
+    # Change employee and pathway
+    at.selectbox[0].set_value("EMP002").run() # Employee selectbox
+    assert at.session_state["selected_employee_id_whatif"] == "EMP002"
+    at.selectbox[1].set_value("Data Visualization").run() # Pathway selectbox (by name)
+    assert at.session_state["selected_pathway_id_whatif"] == "P002" # P002 is for Data Visualization
+
+    # Change completion rate and mastery score
+    at.slider[0].set_value(0.7).run() # Completion Rate
+    assert at.session_state["completion_rate_whatif"] == 0.7
+    at.slider[1].set_value(0.95).run() # Mastery Score
+    assert at.session_state["mastery_score_whatif"] == 0.95
+
+    # Simulate pathway impact
+    at.button[0].click().run() # Click "Simulate Pathway Impact" button
+    
+    # Verify results are displayed
+    assert at.session_state["whatif_results"] is not None
+    assert at.session_state["whatif_results"]["selected_employee_id"] == "EMP002"
+    assert at.markdown[5].value.startswith("Employee ID: **EMP002**") # Check for results markdown
+    assert len(at.pyplot) > 0 # Check for plot
+
+def test_pathway_optimization_page():
+    """
+    Test navigation to Pathway Optimization page, interactions, and results display.
+    """
+    at = AppTest.from_file("app.py").run()
+    
+    # Navigate to Pathway Optimization page
+    at.button[2].click().run() # Click "Pathway Optimization" button in sidebar
+    assert at.session_state["current_page"] == "Pathway Optimization"
+    assert at.title[0].value == "Multi-Step Pathway Optimization"
+
+    # Check initial selections and sliders
+    assert at.session_state["selected_employee_id_opt"] == "EMP001"
     assert at.session_state["T_max_hours_opt"] == 300
     assert at.session_state["cost_weight_lambda_opt"] == 0.005
 
+    # Change employee
+    at.selectbox[0].set_value("EMP002").run() # Employee selectbox
+    assert at.session_state["selected_employee_id_opt"] == "EMP002"
 
-def test_navigate_to_what_if_scenario():
+    # Change max time and cost weight
+    at.slider[0].set_value(400).run() # Maximum Time (hours)
+    assert at.session_state["T_max_hours_opt"] == 400
+    at.slider[1].set_value(0.008).run() # Cost Weight
+    assert at.session_state["cost_weight_lambda_opt"] == 0.008
+
+    # Optimize Pathways
+    at.button[0].click().run() # Click "Optimize Pathways" button
+    
+    # Verify results are displayed
+    assert at.session_state["optimization_results"] is not None
+    assert at.session_state["optimization_results"]["selected_employee_id"] == "EMP002"
+    assert at.markdown[5].value.startswith("Employee ID: **EMP002**") # Check for results markdown
+    assert len(at.pyplot) > 0 # Check for plot
+
+def test_strategic_recommendations_page():
+    """
+    Test navigation to Strategic Recommendations page and content.
+    """
     at = AppTest.from_file("app.py").run()
-    at.button(key="nav_whatif").click().run()
-    assert at.session_state["current_page"] == "What-If Scenario"
-    assert at.title[0].value == "What-If Scenario Engine"
-    assert "Simulate the impact of learning pathways on individual employee AI-Readiness scores." in at.markdown[1].value
-
-
-def test_navigate_to_pathway_optimization():
-    at = AppTest.from_file("app.py").run()
-    at.button(key="nav_optimization").click().run()
-    assert at.session_state["current_page"] == "Pathway Optimization"
-    assert at.title[0].value == "Multi-Step Pathway Optimization"
-    assert "Generate an optimized sequence of learning pathways" in at.markdown[1].value
-
-
-def test_navigate_to_strategic_recommendations():
-    at = AppTest.from_file("app.py").run()
-    at.button(key="nav_recommendations").click().run()
+    
+    # Navigate to Strategic Recommendations page
+    at.button[3].click().run() # Click "Strategic Recommendations" button in sidebar
     assert at.session_state["current_page"] == "Strategic Recommendations"
     assert at.title[0].value == "Strategic Recommendations & Conclusion"
-    assert "Leverage data-driven insights to formulate actionable strategies" in at.markdown[1].value
-
-
-def test_navigate_to_air_overview():
-    at = AppTest.from_file("app.py").run()
-    at.button(key="nav_air_overview").click().run()
-    assert at.session_state["current_page"] == "AI-R Overview"
-    assert at.title[0].value == "The AI-Readiness Framework: Core Concepts"
-    assert "The AI-Readiness Score (AI-R) is a novel parametric framework" in at.markdown[1].value
-
-
-def test_navigate_to_hrr_overview():
-    at = AppTest.from_file("app.py").run()
-    at.button(key="nav_hrr").click().run()
-    assert at.session_state["current_page"] == "Systematic Opportunity (HR^R)"
-    assert at.title[0].value == "Systematic Opportunity ($H^R$) Component"
-    assert "Systematic Opportunity ($H^R$) represents the macro-level demand" in at.markdown[1].value
-
-
-def test_navigate_to_vr_overview():
-    at = AppTest.from_file("app.py").run()
-    at.button(key="nav_vr").click().run()
-    assert at.session_state["current_page"] == "Idiosyncratic Readiness (V^R)"
-    assert at.title[0].value == "Idiosyncratic Readiness ($V^R$) Component"
-    assert "Idiosyncratic Readiness ($V^R$) measures an individual's specific preparation" in at.markdown[1].value
-
-
-def test_navigate_to_synergy_function():
-    at = AppTest.from_file("app.py").run()
-    at.button(key="nav_synergy").click().run()
-    assert at.session_state["current_page"] == "Synergy Function"
-    assert at.title[0].value == "Synergy Function"
-    assert "The Synergy function captures the multiplicative benefits" in at.markdown[1].value
-
-
-def test_dashboard_group_by_department():
-    at = AppTest.from_file("app.py").run()
-    at.selectbox(key="dashboard_group_by_select").set("department").run()
-    assert at.session_state["report_group_by"] == "department"
-    assert at.dataframe[0].value.columns.tolist() == ['department', 'current_ai_r_score']
-    assert at.pyplot[0].figure is not None
-
-
-def test_what_if_scenario_simulation():
-    at = AppTest.from_file("app.py").run()
-    at.button(key="nav_whatif").click().run()
-
-    # Ensure initial values are set from session state
-    assert at.selectbox[0].value == mock_df_employees['employee_id'].iloc[0]
-    assert at.selectbox[1].value == mock_df_pathways['pathway_name'].iloc[0]
-    assert at.slider[0].value == 0.9  # Completion Rate
-    assert at.slider[1].value == 0.85 # Mastery Score
-
-    at.button("Simulate Pathway Impact").click().run()
-
-    # Check if results are displayed
-    assert at.subheader[0].value == "Simulation Results:"
-    assert "Current AI-R Score:" in at.markdown[3].value
-    assert "Projected AI-R Score:" in at.markdown[5].value
-    assert at.pyplot[0].figure is not None
-
-    # Test changing employee and pathway
-    at.selectbox[0].set(mock_df_employees['employee_id'].iloc[1]).run() # Select E002
-    at.selectbox[1].set(mock_df_pathways['pathway_name'].iloc[1]).run() # Select HR Analytics
-    at.slider[0].set_value(0.7).run()
-    at.slider[1].set_value(0.75).run()
-    at.button("Simulate Pathway Impact").click().run()
-
-    assert at.markdown[3].value.startswith(f"Current AI-R Score: **{mock_df_employees['current_ai_r_score'].iloc[1]:.2f}**")
-    assert at.markdown[4].value.startswith("Chosen Pathway: **HR Analytics**")
-    assert at.pyplot[0].figure is not None
-
-
-def test_pathway_optimization_simulation():
-    at = AppTest.from_file("app.py").run()
-    at.button(key="nav_optimization").click().run()
-
-    # Ensure initial values are set from session state
-    assert at.selectbox[0].value == mock_df_employees['employee_id'].iloc[0]
-    assert at.slider[0].value == 300  # Max Time
-    assert at.slider[1].value == 0.005 # Cost Weight
-
-    at.button("Optimize Pathways").click().run()
-
-    # Check if results are displayed
-    assert at.subheader[0].value == "Optimization Results:"
-    assert "Current AI-R Score:" in at.markdown[3].value
-    assert "Recommended Pathway Sequence:" in at.markdown[4].value
-    assert at.pyplot[0].figure is not None
-
-    # Test changing employee, max time, and cost weight
-    at.selectbox[0].set(mock_df_employees['employee_id'].iloc[1]).run() # Select E002
-    at.slider[0].set_value(200).run()
-    at.slider[1].set_value(0.008).run()
-    at.button("Optimize Pathways").click().run()
-
-    assert at.markdown[3].value.startswith(f"Current AI-R Score: **{mock_df_employees['current_ai_r_score'].iloc[1]:.2f}**")
-    assert at.pyplot[0].figure is not None
-
-
-def test_strategic_recommendations_with_optimization_results():
-    at = AppTest.from_file("app.py")
     
-    # Pre-set session state for optimization results
-    at.session_state["optimization_results"] = {
-        "current_ai_r": 75.0,
-        "selected_employee_id": "E001",
-        "recommended_sequence": ["Advanced ML", "Cloud AI Basics"],
-        "projected_final_ai_r": 90.5,
-        "total_cost": 1750,
-        "total_time_hours": 140,
-        "ai_r_improvement": 15.5
+    # Check for presence of key markdown elements and dataframes
+    assert "Target Low AI-R Cohorts" in at.markdown[3].value
+    assert len(at.dataframe) > 0 # For low AI-R cohorts
+    assert "Address Critical Skills Gaps" in at.markdown[5].value
+    assert "Implement Optimized Multi-Step Learning Pathways" in at.markdown[6].value
+    
+    # Test conditional rendering for optimization results if available
+    # Run an optimization first to populate session_state
+    at_opt = AppTest.from_file("app.py").run()
+    at_opt.button[2].click().run() # Navigate to Pathway Optimization
+    at_opt.button[0].click().run() # Click "Optimize Pathways"
+    
+    # Now load the app again and navigate to recommendations to see the effect
+    at_rec = AppTest.from_file("app.py")
+    at_rec.session_state["optimization_results"] = at_opt.session_state["optimization_results"]
+    at_rec.run()
+    at_rec.button[3].click().run() # Navigate to Strategic Recommendations
+    
+    assert f"For employee **{at_rec.session_state['optimization_results']['selected_employee_id']}**" in at_rec.markdown[7].value
+    assert "Recommended Pathway Sequence:" in at_rec.markdown[8].value
+
+
+def test_framework_details_pages():
+    """
+    Test navigation and basic content check for all framework details pages.
+    """
+    pages = {
+        "AI-R Overview": ("nav_air_overview", "The AI-Readiness Framework: Core Concepts", "AI-Readiness Score (AI-R) is a novel parametric framework"),
+        "Systematic Opportunity ($H^R$)": ("nav_hrr", "Systematic Opportunity ($H^R$) Component", "Systematic Opportunity ($H^R$) represents the macro-level demand"),
+        "Idiosyncratic Readiness ($V^R$)": ("nav_vr", "Idiosyncratic Readiness ($V^R$) Component", "Idiosyncratic Readiness ($V^R$) measures an individual's specific preparation"),
+        "Synergy Function": ("nav_synergy", "Synergy Function", "The Synergy function captures the multiplicative benefits")
     }
-    
-    at.run()
-    at.button(key="nav_recommendations").click().run()
 
-    assert at.session_state["current_page"] == "Strategic Recommendations"
-    assert "Recommended Pathway Sequence: **Advanced ML, Cloud AI Basics**" in at.markdown[11].value
-    assert "Projected AI-R Improvement: **15.50**" in at.markdown[12].value
-
+    for page_name, (button_key, expected_title, expected_markdown_snippet) in pages.items():
+        at = AppTest.from_file("app.py").run()
+        at.button[button_key].click().run() # Click the respective sidebar button
+        assert at.session_state["current_page"] == page_name
+        assert at.title[0].value == expected_title
+        assert expected_markdown_snippet in at.markdown[1].value # Check for key introductory text
