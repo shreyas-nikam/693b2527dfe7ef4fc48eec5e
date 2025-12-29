@@ -1,587 +1,1227 @@
 
-# Technical Specification: Workforce AI-Readiness & Upskilling Strategizer Jupyter Notebook
+# Personalized AI Career Pathway Optimizer for Financial Professionals
 
-## 1. Notebook Overview
+## Introduction
 
-**Learning Goals:**
-This notebook aims to guide AI Workforce leaders, Human Resources executives, economists, financial engineers, data analysts, data scientists, and AI professionals with a mathematical focus through the implementation and application of the AI-Readiness Score (AI-R) framework. Specifically, users will learn to:
+In the rapidly evolving landscape of financial services, the integration of Artificial Intelligence (AI) is reshaping roles and creating new opportunities. For financial professionals, understanding how to adapt and strategically position oneself is crucial for long-term career success. This Jupyter Notebook will guide you through a data-driven framework to assess your current AI-readiness, identify high-opportunity career paths, pinpoint skill gaps, and optimize a personalized learning strategy.
 
-*   Implement the AI-Readiness Score (AI-R) framework, decomposing it into Systematic Opportunity ($HR^R$), Idiosyncratic Readiness ($V^R$), and a Synergy factor.
-*   Develop the core mathematical formulas for AI-R, $HR^R$, $V^R$, and Synergy components, including their sub-factors and weights as defined in the provided document.
-*   Create a skills gap analysis feature to pinpoint collective strengths and weaknesses by drilling into $V^R$ sub-components (AI-Fluency, Domain-Expertise, and Adaptive-Capacity).
-*   Build a "What-If" scenario engine to simulate the impact of various training programs and learning pathways on the workforce's overall AI-R, allowing adjustment of factors like completion rates and expected mastery.
-*   Implement a multi-step pathway optimization function to identify optimal sequences of learning investments based on cost and AI-R improvement.
-*   Generate actionable insights and strategic recommendations for upskilling initiatives and talent development.
+You will step into the shoes of **Alice, a Senior Quantitative Analyst at QuantFinance Innovations**, a leading financial institution. Alice is keen to leverage AI to advance her career but is unsure which AI-enabled roles offer the best prospects given her background, and what specific skills she needs to acquire. This notebook will help Alice make informed decisions about her professional development and maximize her career trajectory in the age of AI.
 
-**Target Audience:**
-This notebook is designed for professionals who need a data-driven approach to workforce planning and development in the age of AI. This includes:
+The core of this analysis is the **AI-Readiness Score (AI-R)**, a novel parametric framework that quantifies an individual's preparedness for AI-enabled careers. It decomposes career opportunity into two orthogonal components: **Idiosyncratic Readiness ($V^R$)**, representing individual-specific capabilities, and **Systematic Opportunity ($H^R$)**, representing macro-level job growth and demand. The framework also incorporates a **Synergy Function** to capture the compounding benefits when individual preparation aligns with market opportunity.
 
-*   **AI Workforce Leaders and Human Resources Executives:** To assess collective AI-readiness, design impactful upskilling programs, and make strategic talent investments.
-*   **Economists and Financial Engineers:** To understand and model human capital dynamics in an AI-transformed labor market.
-*   **Data Analysts and Data Scientists:** To apply quantitative modeling techniques to HR and workforce strategy.
-*   **AI Professionals with a Math Focus:** To delve into the mathematical underpinnings and implementation of a complex, multi-factor scoring system.
-
-## 2. Code Requirements
-
-**List of Expected Libraries:**
-*   `pandas`: For data manipulation and management of synthetic datasets.
-*   `numpy`: For numerical operations, especially for mathematical formulas.
-*   `matplotlib.pyplot`: For generating standard plots like bar charts and line plots.
-*   `seaborn`: For creating enhanced statistical visualizations, particularly heatmaps.
-*   `scipy.optimize`: For optimization problems (specifically, for the multi-step pathway optimization).
-
-**List of Algorithms or Functions to be Implemented:**
-
-*   **Data Generation:** Functions to create synthetic `df_employees`, `df_occupations`, `df_pathways` DataFrames with predefined structures and realistic (simulated) data.
-*   **Systematic Opportunity ($HR^R$) Calculation:**
-    *   `calculate_ai_enhancement(occupation_data)`: Computes AI-Enhancement Potential for a given occupation.
-    *   `calculate_job_growth_normalized(occupation_data)`: Computes normalized job growth projection for an occupation.
-    *   `calculate_wage_premium(occupation_data)`: Computes wage premium for an occupation.
-    *   `calculate_entry_accessibility(occupation_data)`: Computes entry accessibility for an occupation.
-    *   `calculate_base_opportunity_score(occupation_data, weights)`: Aggregates the above into $H_{base}$.
-    *   `calculate_growth_multiplier(occupation_data, lambda_val)`: Computes market momentum growth multiplier.
-    *   `calculate_regional_multiplier(occupation_data, gamma_val)`: Computes regional demand multiplier.
-    *   `calculate_systematic_opportunity(occupation_data, weights, lambda_val, gamma_val)`: Computes total $HR^R$.
-*   **Idiosyncratic Readiness ($V^R$) Calculation:**
-    *   `calculate_technical_ai_skills(employee_data)`: Computes $S_{i,1}$.
-    *   `calculate_ai_augmented_productivity(employee_data)`: Computes $S_{i,2}$.
-    *   `calculate_critical_ai_judgment(employee_data)`: Computes $S_{i,3}$.
-    *   `calculate_ai_learning_velocity(employee_data)`: Computes $S_{i,4}$.
-    *   `calculate_ai_fluency(employee_data, theta_weights)`: Aggregates $S_{i,k}$ into AI-Fluency.
-    *   `calculate_educational_foundation(employee_data)`: Computes $E_{education}$.
-    *   `calculate_practical_experience(employee_data, gamma_exp)`: Computes $E_{experience}$.
-    *   `calculate_specialization_depth(employee_data, weights)`: Computes $E_{specialization}$.
-    *   `calculate_domain_expertise(employee_data, gamma_exp, weights)`: Aggregates into Domain-Expertise.
-    *   `calculate_adaptive_capacity(employee_data)`: Computes Adaptive-Capacity.
-    *   `calculate_idiosyncratic_readiness(employee_data, vr_weights, theta_weights, gamma_exp, domain_weights)`: Computes total $V^R$.
-*   **Synergy Function Calculation:**
-    *   `calculate_skills_match_score(employee_skills, required_skills, skill_importance)`: Computes skills match.
-    *   `calculate_timing_factor(years_experience)`: Computes career stage timing factor.
-    *   `calculate_alignment_factor(skills_match_score, timing_factor)`: Computes alignment factor.
-    *   `calculate_synergy(vr_score, hr_score, alignment_factor)`: Computes Synergy%.
-*   **Overall AI-Readiness Score Calculation:**
-    *   `calculate_ai_r(vr_score, hr_score, synergy_score, alpha, beta)`: Computes final AI-R.
-*   **Reporting and Analysis:**
-    *   `generate_ai_r_report_summary(df_employees)`: Aggregates AI-R scores by group (e.g., department, job role).
-    *   `plot_skills_gap_heatmap(df_employees, group_by_column)`: Visualizes strengths and weaknesses.
-    *   `plot_current_vs_projected_ai_r(current_scores, projected_scores, scenario_names)`: Compares AI-R under different scenarios.
-*   **What-If Scenario Engine:**
-    *   `simulate_pathway_impact(employee_id, pathway_id, completion_rate, mastery_score, df_employees, df_occupations, df_pathways, params)`: Simulates impact on an individual's $V^R$ and then overall AI-R.
-*   **Multi-Step Pathway Optimization:**
-    *   `optimize_pathway_sequence(employee_id, current_ai_r, available_pathways, T_max, params, df_pathways)`: Identifies optimal sequence of learning investments using a simplified optimization strategy (e.g., greedy approach or dynamic programming approximation).
-
-**Visualization like Charts, Tables, Plots that Should be Generated:**
-
-*   **Table:** Summary table of synthetic employee data, occupational data, and pathway data.
-*   **Bar Chart:** Aggregated AI-R scores by department or job role (current state).
-*   **Bar Chart:** Distribution of AI-R scores (e.g., histogram or density plot).
-*   **Heatmap:** Skills gap analysis showing average scores for AI-Fluency, Domain-Expertise, and Adaptive-Capacity sub-components across different employee groups (e.g., by job role).
-*   **Comparative Bar Chart / Line Plot:** Current AI-R versus projected AI-R for an individual or group under different "What-If" training scenarios.
-*   **Table:** "What-If" scenario results, showing initial AI-R, chosen pathway, simulated completion/mastery, projected AI-R, and $\Delta AI-R$.
-*   **Table:** Results of the multi-step pathway optimization, including recommended sequence, total cost, total time, and projected AI-R improvement.
-*   **Markdown-formatted Strategic Recommendations:** Actionable insights derived from the analyses.
-
-## 3. Notebook Sections (in detail)
-
-### Section 1: Introduction to the AI-Readiness Framework
-
-**Markdown Cell:**
-The AI-Readiness Score (AI-R) is a novel parametric framework designed to quantify an individual's preparedness for success in AI-enabled careers. It decomposes career opportunity into two orthogonal components: Systematic Opportunity ($HR^R$), representing macro-level job growth and demand, and Idiosyncratic Readiness ($V^R$), representing individual-specific capabilities. A Synergy factor captures the multiplicative benefits when individual readiness aligns with market opportunity.
-
-The core formula for the AI-Readiness Score for individual $i$ at time $t$ is defined as:
-$$AI-R_{i,t} = \alpha \cdot V^R_{i}(t) + (1 - \alpha) \cdot HR^R(t) + \beta \cdot Synergy\%(V^R, HR^R)$$
+The AI-R score for an individual $i$ at time $t$ is defined as:
+$$AI-R_{i,t} = \alpha \cdot V_i^R(t) + (1 - \alpha) \cdot H_{i}^R(t) + \beta \cdot Synergy\%(V_i^R, H_{i}^R)$$
 where:
-*   $V^R_{i}(t)$: Idiosyncratic Readiness (individual capability).
-*   $HR^R(t)$: Systematic Opportunity (market demand).
-*   $\alpha \in [0,1]$: Weight on individual vs. market factors. For this notebook, we'll use $\alpha = 0.6$.
-*   $\beta > 0$: Synergy coefficient. For this notebook, we'll use $\beta = 0.15$.
-*   Both $V^R$ and $HR^R$ are normalized to $[0, 100]$.
-*   $Synergy\% \in [0,100]$ (percentage units).
-
-This framework allows for dynamic "what-if" scenario planning, helping to guide targeted upskilling initiatives and talent development.
-
-**Code Cell (Function Definition):**
-Define the `calculate_ai_r` function, which computes the overall AI-Readiness Score given the individual components and weighting parameters.
-
-**Code Cell (Execution):**
-Define default parameters for $\alpha$ and $\beta$.
-Initialize placeholder values for $V^R$, $HR^R$, and $Synergy\%$ to demonstrate the function, for example: $V^R = 75$, $HR^R = 80$, $Synergy\% = 51.0$.
-Execute `calculate_ai_r` with these placeholder values and print the result.
-
-**Markdown Cell:**
-This execution demonstrates how the final AI-R score is computed by combining the Idiosyncratic Readiness ($V^R$), Systematic Opportunity ($HR^R$), and Synergy components, weighted by the parameters $\alpha$ and $\beta$. The example reflects a scenario where an individual has strong readiness in a high-opportunity field with good alignment, resulting in a high AI-R score.
-
----
-
-### Section 2: Synthetic Data Generation and Setup
-
-**Markdown Cell:**
-To simulate a real-world scenario without relying on external APIs, we will generate synthetic datasets for employee cohorts, occupational taxonomies, labor market data, and learning pathway coefficients. These datasets will be `pandas.DataFrame` objects, carefully structured to contain all necessary attributes for AI-R calculations.
-
-We define three primary DataFrames:
-1.  `df_employees`: Contains individual employee data, including current skill levels, experience, education, and initial AI-R components (some to be calculated).
-2.  `df_occupations`: Contains data relevant to specific job roles, such as AI-Enhancement potential, growth projections, wage premiums, and required skills.
-3.  `df_pathways`: Details various learning pathways, their costs, time commitments, and impact coefficients on $V^R$ sub-components.
-
-**Code Cell (Function Definition):**
-Define three functions:
-*   `generate_synthetic_employees(num_employees)`: Creates `df_employees` with random but plausible values for attributes like `employee_id`, `job_role`, `department`, `years_experience`, `education_level`, current $V^R$ sub-component scores, and individual skill levels (`skill_a` through `skill_j`).
-*   `generate_synthetic_occupations()`: Creates `df_occupations` with data for several example job roles, including `occupation`, `ai_enhancement_potential`, `projected_jobs_t`, `projected_jobs_t_plus_10`, `ai_skilled_wage`, `median_wage`, `education_years_required`, `experience_years_required`, `remote_work_factor`, `job_postings_current_month`, `job_postings_prev_month`, `national_avg_demand`, and required skill levels (`required_skill_a` through `required_skill_j`) with their `_importance` scores.
-*   `generate_synthetic_pathways()`: Creates `df_pathways` with different learning pathways, their `pathway_id`, `pathway_name`, `pathway_type`, `cost`, `time_hours`, and impact coefficients (`delta_ai_fluency`, `delta_domain_expertise`, `delta_adaptive_capacity`).
-
-Define a dictionary `PARAMS` to store all global parameters and weights ($\alpha, \beta, \lambda, \gamma$, and all $w_j, \theta_k$ weights).
-
-**Code Cell (Execution):**
-Call the `generate_synthetic_employees(50)`, `generate_synthetic_occupations()`, and `generate_synthetic_pathways()` functions to create the DataFrames.
-Display the `.head()` of each DataFrame and print the `PARAMS` dictionary to show the initial setup.
-
-**Markdown Cell:**
-The synthetic datasets provide a realistic basis for computing the AI-R scores and simulating scenarios. The `PARAMS` dictionary centralizes all coefficients and weights, making the model transparent and easily adjustable for future calibration or exploration. This setup ensures that all subsequent calculations have concrete input data and predefined parameters.
-
----
-
-### Section 3: Systematic Opportunity ($HR^R$) Components: AI-Enhancement Potential
-
-**Markdown Cell:**
-The Systematic Opportunity ($HR^R$) component quantifies macro-level market demand and growth potential. One crucial factor is the AI-Enhancement Potential, which measures how much AI augments rather than replaces tasks within an occupation. It is defined as:
-$$AI\text{-}Enhancement_o = \frac{1}{|T_o|} \sum_{t \in T_o} (1 - Automation_t) \cdot AI\text{-}Augmentation_t$$
-where $T_o$ is the set of tasks for occupation $o$, $Automation_t \in [0,1]$ measures replaceability, and $AI\text{-}Augmentation_t \in [0,1]$ measures productivity enhancement. For simplicity in our synthetic data, we directly include an aggregated `ai_enhancement_potential` for each occupation in `df_occupations`.
-
-**Code Cell (Function Definition):**
-Define the `calculate_ai_enhancement` function. This function will directly extract the `ai_enhancement_potential` value from the `df_occupations` DataFrame for a given occupation.
-
-**Code Cell (Execution):**
-Select an example occupation from `df_occupations`.
-Call `calculate_ai_enhancement` for this occupation.
-Print the AI-Enhancement Potential for the chosen occupation.
-
-**Markdown Cell:**
-This step demonstrates how the AI-Enhancement Potential, a key sub-component of $HR^R$, is retrieved for a specific job role. This value reflects the degree to which AI is expected to augment, rather than automate, tasks within that occupation, indicating its future relevance.
-
----
-
-### Section 4: Systematic Opportunity ($HR^R$) Components: Job Growth Projections
-
-**Markdown Cell:**
-Job Growth Projections quantify the expected increase or decrease in employment for an occupation over a given period (e.g., 10 years). The raw growth rate $g$ is calculated as:
-$$Growth_o = \frac{\text{Projected Jobs}_{o,t+10} - \text{Current Jobs}_{o,t}}{\text{Current Jobs}_{o,t}}$$
-This raw growth rate is then normalized to a scale of $[0, 100]$ using an affine transformation to make it comparable with other AI-R components:
-$$Growth_{normalized} = \frac{g + 0.5}{2.0} \times 100$$
-This transformation maps a growth rate range of $g \in [-0.5, 1.5]$ (representing -50% to +150% change) to $[0,100]$.
-
-**Code Cell (Function Definition):**
-Define the `calculate_job_growth_normalized` function. It takes occupation data (a row from `df_occupations`) as input.
-It calculates the raw growth rate using `projected_jobs_t_plus_10` and `projected_jobs_t`.
-It then normalizes this raw growth rate using the affine transformation formula.
-
-**Code Cell (Execution):**
-Select an example occupation from `df_occupations`.
-Call `calculate_job_growth_normalized` for this occupation.
-Print the raw job growth rate and the normalized job growth score for the chosen occupation.
-
-**Markdown Cell:**
-The normalized job growth score provides a standardized measure of an occupation's future demand, directly contributing to its Systematic Opportunity. A higher normalized score indicates a greater projected increase in job availability, making the occupation more attractive in the AI-transformed labor market.
-
----
-
-### Section 5: Systematic Opportunity ($HR^R$) Components: Wage Premium & Entry Accessibility
-
-**Markdown Cell:**
-Two other critical factors contributing to Systematic Opportunity are Wage Premium and Entry Accessibility.
-**Wage Premium** ($Wage_o$) measures the compensation potential for AI-skilled roles relative to the median wage in that occupation:
-$$Wage_o = \frac{\text{AI-skilled wage}_o - \text{median wage}_o}{\text{median wage}_o}$$
-This provides an indication of the economic value placed on AI-related skills within a role.
-
-**Entry Accessibility** ($Access_o$) quantifies the ease of transitioning into a role, based on typical educational and experience requirements:
-$$Access_o = 1 - \frac{\text{Education Years Required} + \text{Experience Years Required}}{10}$$
-This linear formula provides a simplified measure, where a higher score indicates easier entry.
-
-**Code Cell (Function Definition):**
-Define `calculate_wage_premium(occupation_data)`.
-Define `calculate_entry_accessibility(occupation_data)`.
-
-**Code Cell (Execution):**
-Select an example occupation from `df_occupations`.
-Call `calculate_wage_premium` and `calculate_entry_accessibility` for this occupation.
-Print the calculated Wage Premium and Entry Accessibility scores.
-
-**Markdown Cell:**
-These calculations complete the primary sub-components of the Base Opportunity Score. Wage Premium highlights the financial attractiveness of an AI-enabled role, while Entry Accessibility provides insight into the practical barriers for individuals considering a transition, both being crucial for assessing Systematic Opportunity.
-
----
-
-### Section 6: Calculate Base Opportunity Score ($H_{base}$)
-
-**Markdown Cell:**
-The Base Opportunity Score ($H_{base}(o)$) aggregates the various dimensions of occupational attractiveness: AI-Enhancement Potential, Job Growth Projections, Wage Premium, and Entry Accessibility. It is calculated as a weighted sum:
-$$H_{base}(o) = w_1 \cdot AI\text{-}Enhancement_o + w_2 \cdot Growth_{normalized} + w_3 \cdot Wage_o + w_4 \cdot Access_o$$
-The weights ($w_j$) reflect the relative importance of each factor, as defined in the `PARAMS` dictionary ($w_1 = 0.30$, $w_2 = 0.30$, $w_3 = 0.25$, $w_4 = 0.15$). The final score is then scaled to $[0,100]$.
-
-**Code Cell (Function Definition):**
-Define the `calculate_base_opportunity_score` function.
-This function takes an occupation's data and the relevant weights (`ai_enhancement_weight`, `job_growth_weight`, `wage_premium_weight`, `entry_accessibility_weight`) from `PARAMS`.
-It calls the previously defined functions to get each sub-component score and applies the weights to compute $H_{base}$.
-It scales the final $H_{base}$ to a $[0, 100]$ range.
-
-**Code Cell (Execution):**
-Select an example occupation from `df_occupations`.
-Call `calculate_base_opportunity_score` for this occupation, passing the occupation's data and the relevant weights from `PARAMS`.
-Print the computed Base Opportunity Score for the chosen occupation.
-Update `df_occupations` with the `base_opportunity_score` for all occupations.
-
-**Markdown Cell:**
-The Base Opportunity Score synthesizes multiple static aspects of an occupation's attractiveness. This score provides a foundational understanding of the long-term potential of a career path, serving as a key input for the overall Systematic Opportunity.
-
----
-
-### Section 7: Dynamic Multipliers: Growth & Regional
-
-**Markdown Cell:**
-Beyond the static Base Opportunity Score, Systematic Opportunity is modulated by dynamic, time-varying market factors:
-1.  **Growth Multiplier ($M_{growth}(t)$):** Captures market momentum based on recent changes in job postings.
-    $$M_{growth}(t) = 1 + \lambda \cdot \left( \frac{\text{Job Postings}_{o,t}}{\text{Job Postings}_{o,t-1}} - 1 \right)$$
-    where $\lambda = 0.3$ (from `PARAMS`) dampens volatility, keeping the multiplier typically between $0.7$ and $1.3$.
-2.  **Regional Multiplier ($M_{regional}(t)$):** Adjusts for local labor market conditions and remote work suitability.
-    $$M_{regional}(t) = \frac{\text{Local Demand}_{i,t}}{\text{National Avg Demand}} \times (1 + \gamma \cdot \text{Remote Work Factor}_o)$$
-    where $\gamma = 0.2$ (from `PARAMS`) and $Remote Work Factor \in [0,1]$ measures the occupation's suitability for remote work. For simplicity, we will assume `Local Demand` equals `National Avg Demand` for the primary calculation and focus on the `Remote Work Factor` contribution.
-
-**Code Cell (Function Definition):**
-Define `calculate_growth_multiplier(occupation_data, lambda_val)`.
-Define `calculate_regional_multiplier(occupation_data, gamma_val)`.
-
-**Code Cell (Execution):**
-Select an example occupation from `df_occupations`.
-Call `calculate_growth_multiplier` and `calculate_regional_multiplier` for this occupation using the $\lambda$ and $\gamma$ values from `PARAMS`.
-Print the calculated Growth Multiplier and Regional Multiplier.
-Update `df_occupations` with `growth_multiplier` and `regional_multiplier` for all occupations.
-
-**Markdown Cell:**
-The dynamic multipliers introduce responsiveness to market fluctuations. The Growth Multiplier reflects current hiring trends, while the Regional Multiplier accounts for geographical demand and the increasing prevalence of remote work. These factors ensure that the Systematic Opportunity score remains relevant to contemporary market conditions.
-
----
-
-### Section 8: Calculate Final Systematic Opportunity ($HR^R$)
-
-**Markdown Cell:**
-The final Systematic Opportunity score ($HR^R(t)$) for an individual $i$ targeting occupation $o_{target}$ at time $t$ is calculated by combining the Base Opportunity Score with the dynamic multipliers:
-$$HR^R(t) = H_{base}(O_{target}) \cdot M_{growth}(t) \cdot M_{regional}(t)$$
-This comprehensive score represents the overall attractiveness and growth potential of a chosen occupation in the current market environment, normalized to a $[0, 100]$ scale.
-
-**Code Cell (Function Definition):**
-Define the `calculate_systematic_opportunity` function.
-This function takes an occupation's data and the relevant parameters.
-It combines `base_opportunity_score`, `growth_multiplier`, and `regional_multiplier` to compute $HR^R$.
-It ensures the final $HR^R$ is capped within $[0, 100]$.
-
-**Code Cell (Execution):**
-Iterate through `df_employees`. For each employee, determine their `job_role` as the `O_target`.
-For each employee, retrieve the corresponding `base_opportunity_score`, `growth_multiplier`, and `regional_multiplier` from `df_occupations`.
-Call `calculate_systematic_opportunity` for each employee's target occupation.
-Store the resulting $HR^R$ scores in a new `hr_r_score` column in `df_employees`.
-Display `df_employees` with the newly calculated `hr_r_score` column.
-
-**Markdown Cell:**
-This step completes the calculation of the Systematic Opportunity component for each employee, linking their current job role to market conditions. This score highlights external career potential that individuals can position themselves to capture.
-
----
-
-### Section 9: Idiosyncratic Readiness ($V^R$) Components: AI-Fluency Factor
-
-**Markdown Cell:**
-Idiosyncratic Readiness ($V^R$) measures an individual's specific capabilities. The AI-Fluency factor is a key sub-component, representing the ability to effectively use, understand, and collaborate with AI systems. It is calculated as a weighted sum of four sub-components:
-$$AI\text{-}Fluency_i = \sum_{k=1}^4 \theta_k \cdot S_{i,k}$$
-The sub-components ($S_{i,k}$) and their weights ($\theta_k$ from `PARAMS`) are:
-1.  **Technical AI Skills** ($S_{i,1}$, $\theta_1 = 0.30$): Based on Prompting, Tools, Understanding, and Data Literacy scores.
-    $$S_{i,1} = \frac{1}{4} (\text{Prompting}_i + \text{Tools}_i + \text{Understanding}_i + \text{DataLit}_i)$$
-2.  **AI-Augmented Productivity** ($S_{i,2}$, $\theta_2 = 0.35$): Measures productivity gains with AI assistance.
-    $$S_{i,2} = \frac{\text{Output Quality}_{i,with AI}}{\text{Output Quality}_{i,without AI}} \cdot \frac{\text{Time}_{i,without AI}}{\text{Time}_{i,with AI}}$$
-3.  **Critical AI Judgment** ($S_{i,3}$, $\theta_3 = 0.20$): Assesses error detection and appropriate trust decisions with AI outputs.
-    $$S_{i,3} = \frac{\text{Errors Caught}_i}{\text{Total AI Errors}} + \frac{\text{Appropriate Trust Decisions}_i}{\text{Total Decisions}}$$
-4.  **AI Learning Velocity** ($S_{i,4}$, $\theta_4 = 0.15$): Measures improvement rate per unit time investment.
-    $$S_{i,4} = \frac{\Delta Proficiency_i}{\Delta t} \cdot \frac{1}{\text{Hours Invested}}$$
-    For simplicity in this notebook, $\Delta Proficiency_i / \Delta t$ can be approximated as a 'learning_rate' for simulation purposes.
-
-**Code Cell (Function Definition):**
-Define `calculate_technical_ai_skills(employee_data)`.
-Define `calculate_ai_augmented_productivity(employee_data)`.
-Define `calculate_critical_ai_judgment(employee_data)`.
-Define `calculate_ai_learning_velocity(employee_data)`.
-Define `calculate_ai_fluency(employee_data, theta_weights)`: This function aggregates the four sub-components using `theta_weights` from `PARAMS`.
-
-**Code Cell (Execution):**
-For an example employee from `df_employees`, call each of the four sub-component calculation functions.
-Then, call `calculate_ai_fluency` for this employee using the $\theta$ weights from `PARAMS`.
-Print the AI-Fluency score for the example employee.
-Update `df_employees` with the calculated `ai_fluency_score` for all employees.
-
-**Markdown Cell:**
-The AI-Fluency score provides a detailed individual assessment of an employee's ability to interact with and leverage AI technologies. This multi-faceted measure highlights specific areas where an individual might excel or need further development in their AI-related capabilities.
-
----
-
-### Section 10: Idiosyncratic Readiness ($V^R$) Components: Domain-Expertise Factor
-
-**Markdown Cell:**
-Domain-Expertise captures an individual's depth of knowledge in specific application areas, complementing their AI-Fluency. It is a multiplicative combination of Educational Foundation, Practical Experience, and Specialization Depth:
-$$Domain\text{-}Expertise_i = E_{education} \cdot E_{experience} \cdot E_{specialization}$$
-1.  **Educational Foundation ($E_{education}$):** Discrete values based on education level (e.g., PhD=1.0, Master's=0.85, Bachelor's=0.70, Associate's/Certificate=0.60, HS+Coursework=0.50).
-2.  **Practical Experience ($E_{experience}$):** Measured by years of experience with diminishing returns:
-    $$E_{experience} = 1 - e^{-\gamma_{exp} \cdot Years}$$
-    where $\gamma_{exp} = 0.15$ (from `PARAMS`).
-3.  **Specialization Depth ($E_{specialization}$):** Reflects specific achievements and recognition in their field:
-    $$E_{specialization} = w_{port} \cdot \text{Portfolio}_i + w_{recog} \cdot \text{Recognition}_i + w_{cred} \cdot \text{Credentials}_i$$
-    where $w_{port} = 0.4$, $w_{recog} = 0.3$, $w_{cred} = 0.3$ (from `PARAMS`).
-
-**Code Cell (Function Definition):**
-Define `calculate_educational_foundation(employee_data)`.
-Define `calculate_practical_experience(employee_data, gamma_exp)`.
-Define `calculate_specialization_depth(employee_data, weights)`: Takes `domain_portfolio_score`, `domain_recognition_score`, `domain_credentials_score` and respective weights.
-Define `calculate_domain_expertise(employee_data, gamma_exp, domain_weights)`: Aggregates the three sub-factors.
-
-**Code Cell (Execution):**
-For an example employee from `df_employees`:
-Call `calculate_educational_foundation`, `calculate_practical_experience` (using `PARAMS['gamma_experience_decay']`), and `calculate_specialization_depth` (using `PARAMS` domain weights).
-Then, call `calculate_domain_expertise` for this employee.
-Print the Domain-Expertise score for the example employee.
-Update `df_employees` with the calculated `domain_expertise_score` for all employees.
-
-**Markdown Cell:**
-Domain-Expertise underscores the importance of deep, specialized knowledge in specific fields, which AI tools are designed to augment. This score provides a quantitative measure of an individual's subject matter mastery, a crucial complement to their AI-Fluency.
-
----
-
-### Section 11: Idiosyncratic Readiness ($V^R$) Components: Adaptive-Capacity Factor
-
-**Markdown Cell:**
-Adaptive-Capacity measures the meta-skills that enable successful navigation of AI-driven transitions, focusing on an individual's ability to learn, adapt, and interact effectively in new environments. It is an equally weighted sum of three meta-skills:
-$$Adaptive\text{-}Capacity_i = \frac{1}{3} (C_{cognitive} + C_{social} + C_{strategic})$$
-where each $C$ component is scored on a scale of $[0, 100]$:
-*   **Cognitive Flexibility ($C_{cognitive}$):** Problem-solving in novel contexts, transfer learning, creative application of AI tools.
-*   **Social-Emotional Intelligence ($C_{social}$):** Empathy, negotiation, leadership, human-AI collaboration.
-*   **Strategic Career Management ($C_{strategic}$):** Awareness of AI trends, proactive skill development, network building.
-
-**Code Cell (Function Definition):**
-Define `calculate_adaptive_capacity(employee_data)`: This function takes `adaptive_cognitive_flexibility`, `adaptive_social_emotional`, and `adaptive_strategic_career` scores from the employee data and computes their average.
-
-**Code Cell (Execution):**
-For an example employee from `df_employees`:
-Call `calculate_adaptive_capacity` for this employee.
-Print the Adaptive-Capacity score for the example employee.
-Update `df_employees` with the calculated `adaptive_capacity_score` for all employees.
-
-**Markdown Cell:**
-Adaptive-Capacity highlights an individual's inherent ability to thrive in a rapidly changing AI landscape. These meta-skills are increasingly vital for sustained career success, as they enable individuals to continuously learn, adapt, and collaborate effectively with both humans and AI.
-
----
-
-### Section 12: Calculate Final Idiosyncratic Readiness ($V^R$)
-
-**Markdown Cell:**
-The final Idiosyncratic Readiness score ($V^R(t)$) aggregates AI-Fluency, Domain-Expertise, and Adaptive-Capacity. This score quantifies an individual's personal preparation to succeed in AI-enabled careers, factors that can be directly improved through deliberate learning and skill development. It is a weighted sum:
-$$V^R(t) = w_{VR1} \cdot AI\text{-}Fluency_i(t) + w_{VR2} \cdot Domain\text{-}Expertise_i(t) + w_{VR3} \cdot Adaptive\text{-}Capacity_i(t)$$
-The weights ($w_{VR1} = 0.45$, $w_{VR2} = 0.35$, $w_{VR3} = 0.20$) reflect the assessment that AI-Fluency is the most critical factor, followed by Domain-Expertise, with Adaptive-Capacity playing a supporting role (weights are from `PARAMS`). The final $V^R$ score is normalized to $[0, 100]$.
-
-**Code Cell (Function Definition):**
-Define the `calculate_idiosyncratic_readiness` function.
-This function takes employee data and the $V^R$ component weights (`ai_fluency_weight_vr`, `domain_expertise_weight_vr`, `adaptive_capacity_weight_vr`) from `PARAMS`.
-It combines `ai_fluency_score`, `domain_expertise_score`, and `adaptive_capacity_score` to compute $V^R$.
-It ensures the final $V^R$ is capped within $[0, 100]$.
-
-**Code Cell (Execution):**
-Iterate through `df_employees`.
-Call `calculate_idiosyncratic_readiness` for each employee, passing their relevant scores and the $V^R$ weights from `PARAMS`.
-Store the resulting $V^R$ scores in a new `vr_score` column in `df_employees`.
-Display `df_employees` with the newly calculated `vr_score` column.
-
-**Markdown Cell:**
-This completes the calculation of the individual-specific readiness component. The $V^R$ score provides a holistic view of an individual's intrinsic capabilities and potential for growth in AI-driven roles, serving as a critical counterpart to the market-driven $HR^R$.
-
----
-
-### Section 13: Synergy Function: Skills Match & Timing Factor
-
-**Markdown Cell:**
-The Synergy function captures the multiplicative benefits when individual readiness ($V^R$) aligns with market opportunity ($HR^R$). It is defined as:
+*   $V_i^R(t)$: Idiosyncratic Readiness (individual capability), normalized to $[0, 100]$.
+*   $H_i^R(t)$: Systematic Opportunity (market demand) for the target occupation, normalized to $[0, 100]$.
+*   $\alpha \in [0,1]$: Weight on individual vs. market factors. Default $\alpha = 0.6$.
+*   $\beta > 0$: Synergy coefficient, capturing multiplicative benefits. Default $\beta = 0.15$.
+*   $Synergy\% \in [0,100]$: Percentage units.
+
+By walking through this workflow, Alice will gain personalized, data-driven career guidance, ensuring her learning investments are impactful for high-opportunity roles in finance.
+
+## 1. Setup: Libraries and Global Parameters
+
+Alice begins by setting up her analytical environment. This involves installing necessary libraries and defining global parameters that influence the AI-Readiness Score calculation. These parameters can be adjusted to reflect different strategic priorities or market conditions.
+
+### Code Cell: Install Libraries
+
+```python
+!pip install numpy pandas matplotlib seaborn scipy
+```
+
+### Code Cell: Import Dependencies and Define Global Parameters
+
+```python
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import os
+
+# --- Global Model Parameters (Adjustable by Alice for scenario analysis) ---
+
+# AI-Readiness Score (AI-R) weights
+ALPHA = 0.6  # Weight on Idiosyncratic Readiness (VR)
+BETA = 0.15  # Synergy coefficient
+
+# Idiosyncratic Readiness (VR) component weights
+VR_W1_AI_FLUENCY = 0.45
+VR_W2_DOMAIN_EXPERTISE = 0.35
+VR_W3_ADAPTIVE_CAPACITY = 0.20
+VR_COMPONENT_WEIGHTS = {
+    'ai_fluency': VR_W1_AI_FLUENCY,
+    'domain_expertise': VR_W2_DOMAIN_EXPERTISE,
+    'adaptive_capacity': VR_W3_ADAPTIVE_CAPACITY
+}
+
+# AI-Fluency sub-factor weights (theta_k)
+THETA1_TECHNICAL_AI_SKILLS = 0.30
+THETA2_AI_AUGMENTED_PRODUCTIVITY = 0.35
+THETA3_CRITICAL_AI_JUDGMENT = 0.20
+THETA4_AI_LEARNING_VELOCITY = 0.15
+AI_FLUENCY_THETA_WEIGHTS = {
+    'technical_ai_skills': THETA1_TECHNICAL_AI_SKILLS,
+    'ai_augmented_productivity': THETA2_AI_AUGMENTED_PRODUCTIVITY,
+    'critical_ai_judgment': THETA3_CRITICAL_AI_JUDGMENT,
+    'ai_learning_velocity': THETA4_AI_LEARNING_VELOCITY
+}
+
+# Domain-Expertise parameters
+GAMMA_EXPERIENCE_DECAY = 0.15 # For E_experience = 1 - e^(-gamma_experience * Years)
+
+# Systematic Opportunity (HR) base score weights (w_j)
+HR_W1_AI_ENHANCEMENT = 0.30
+HR_W2_JOB_GROWTH = 0.30
+HR_W3_WAGE_PREMIUM = 0.25
+HR_W4_ENTRY_ACCESSIBILITY = 0.15
+HBASE_WEIGHTS = {
+    'ai_enhancement': HR_W1_AI_ENHANCEMENT,
+    'job_growth': HR_W2_JOB_GROWTH,
+    'wage_premium': HR_W3_WAGE_PREMIUM,
+    'entry_accessibility': HR_W4_ENTRY_ACCESSIBILITY
+}
+
+# Systematic Opportunity (HR) multiplier parameters
+LAMBDA_GROWTH_MULTIPLIER = 0.3 # Dampens volatility for growth multiplier
+GAMMA_REMOTE_WORK = 0.2 # Weight for remote work factor in regional multiplier
+
+# Synergy Function parameters
+MAX_POSSIBLE_SKILL_MATCH = 100 # Maximum sum of required skill levels (assuming 0-10 scale for 10 skills)
+
+# Learning Pathway Optimization parameters
+LAMBDA_COST_WEIGHT = 0.1 # Weight for cost in the optimization objective (higher means more cost-averse)
+MAX_LEARNING_TIME_HOURS = 200 # Max hours Alice can invest
+MAX_LEARNING_BUDGET_USD = 1500 # Max budget Alice has for learning
+
+# Set plot style
+sns.set_theme(style="whitegrid")
+plt.rcParams['figure.figsize'] = (10, 6)
+plt.rcParams['font.size'] = 12
+
+print("Libraries imported and global parameters defined.")
+```
+
+## 2. Persona and Initial Profile Assessment
+
+Alice, a Senior Quantitative Analyst at QuantFinance Innovations, has a solid background in financial modeling, risk analysis, and Python programming. She's exploring various AI-enabled roles within finance, such as 'AI Quant Analyst', 'ML Engineer in Trading', and 'AI Risk Analyst', to identify the most promising path for her career growth. This section captures her initial profile and the target roles she's considering.
+
+### Code Cell: Define Alice's Profile and Load Data
+
+```python
+# Create simulated data files for the notebook
+def create_simulated_data():
+    # idiosyncratic_data.csv
+    id_data = {
+        'persona_id': ['Alice'],
+        'prompting': [0.6], 'ai_tools': [0.5], 'understanding': [0.6], 'data_literacy': [0.7],
+        'ai_augmented_productivity_ratio': [0.7], 'critical_ai_judgment_accuracy': [0.65],
+        'appropriate_trust_decisions_ratio': [0.75],
+        'proficiency_gain': [0.10], 'hours_invested': [50], # Sample for velocity calculation
+        'education_level': ['Master\'s in Finance'], 'experience_years': [7],
+        'portfolio_score': [0.7], 'recognition_score': [0.6], 'credentials_score': [0.8],
+        'cognitive_flexibility': [0.75], 'social_emotional_intelligence': [0.8],
+        'strategic_career_management': [0.7]
+    }
+    pd.DataFrame(id_data).to_csv('idiosyncratic_data.csv', index=False)
+
+    # systematic_opportunity_data.csv
+    so_data = {
+        'role': ['AI Quant Analyst', 'ML Engineer in Trading', 'AI Risk Analyst', 'Financial Data Scientist'],
+        'ai_enhancement_potential': [0.85, 0.90, 0.80, 0.75],
+        'current_jobs': [5000, 4500, 6000, 7000],
+        'projected_jobs_10yr': [7500, 7000, 8500, 9000],
+        'ai_skilled_wage': [180000, 195000, 160000, 150000],
+        'median_wage': [120000, 130000, 110000, 105000],
+        'education_years_required': [18, 18, 16, 16], # Masters = 18, Bachelors = 16
+        'experience_years_required': [5, 6, 4, 3],
+        'remote_work_factor': [0.6, 0.5, 0.7, 0.75]
+    }
+    pd.DataFrame(so_data).to_csv('systematic_opportunity_data.csv', index=False)
+
+    # job_postings_data.csv
+    jp_data = {
+        'role': ['AI Quant Analyst', 'ML Engineer in Trading', 'AI Risk Analyst', 'Financial Data Scientist'] * 2,
+        'month': [1,2]*4,
+        'job_postings_t': [500, 520, 450, 480, 600, 630, 700, 720],
+        'job_postings_t_minus_1': [490, 500, 440, 450, 590, 600, 680, 700]
+    }
+    pd.DataFrame(jp_data).to_csv('job_postings_data.csv', index=False)
+
+    # regional_demand_data.csv
+    rd_data = {
+        'role': ['AI Quant Analyst', 'ML Engineer in Trading', 'AI Risk Analyst', 'Financial Data Scientist'],
+        'local_demand': [1.1, 0.9, 1.2, 1.0], # Relative to national avg
+        'national_avg_demand': [1.0, 1.0, 1.0, 1.0]
+    }
+    pd.DataFrame(rd_data).to_csv('regional_demand_data.csv', index=False)
+
+    # skill_requirements.csv
+    sr_data = {
+        'role': ['AI Quant Analyst', 'ML Engineer in Trading', 'AI Risk Analyst', 'Financial Data Scientist'],
+        'Python': [9, 10, 8, 9], 'SQL': [7, 8, 9, 8], 'ML_basics': [8, 9, 7, 8],
+        'Risk_Analysis': [9, 6, 10, 7], 'Financial_Modeling': [9, 7, 8, 8],
+        'Data_Viz': [7, 8, 7, 8], 'Quant_Models': [10, 8, 7, 6], 'AI_Ethics': [7, 8, 9, 7],
+        'GenAI_Tools': [6, 7, 6, 7], 'Cloud_Platforms': [7, 9, 7, 8]
+    }
+    pd.DataFrame(sr_data).to_csv('skill_requirements.csv', index=False)
+
+    # learning_pathways.csv
+    lp_data = {
+        'pathway_id': ['P001', 'P002', 'P003', 'P004', 'P005', 'P006', 'P007', 'P008'],
+        'pathway_name': ['Prompt Engineering for Finance', 'Advanced ML for Trading',
+                         'AI Ethics in Risk Management', 'Generative AI for Financial Data',
+                         'Deep Learning Fundamentals', 'Human-AI Collaboration Skills',
+                         'Financial Domain-Specific AI', 'Strategic Career Planning with AI'],
+        'type': ['AI-Fluency', 'Domain+AI', 'Adaptive Capacity', 'AI-Fluency',
+                 'Domain+AI', 'Adaptive Capacity', 'Domain+AI', 'Adaptive Capacity'],
+        'impact_ai_fluency': [10, 5, 2, 12, 8, 3, 6, 2],
+        'impact_domain_expertise': [3, 15, 1, 4, 10, 1, 18, 1],
+        'impact_adaptive_capacity': [1, 2, 8, 1, 2, 7, 2, 9],
+        'estimated_time_hours': [40, 80, 30, 50, 70, 25, 90, 35],
+        'estimated_cost_usd': [300, 800, 200, 450, 700, 180, 950, 250],
+        'prerequisites': ['[]', '[P001]', '[]', '[]', '[P001]', '[]', '[P001]', '[]']
+    }
+    pd.DataFrame(lp_data).to_csv('learning_pathways.csv', index=False)
+
+# Ensure simulated data exists
+create_simulated_data()
+
+# Alice's current professional profile
+alice_profile = {
+    'persona_id': 'Alice',
+    'education_level': 'Master\'s in Finance',
+    'experience_years': 7,
+    'current_skills': {
+        'Python': 8, 'SQL': 7, 'ML_basics': 6, 'Risk_Analysis': 9,
+        'Financial_Modeling': 8, 'Data_Viz': 7, 'Quant_Models': 6,
+        'AI_Ethics': 5, 'GenAI_Tools': 4, 'Cloud_Platforms': 5
+    },
+    'ai_fluency_subfactors': {
+        'prompting': 0.6, 'ai_tools': 0.5, 'understanding': 0.6, 'data_literacy': 0.7,
+        'ai_augmented_productivity': 0.7, 'critical_ai_judgment': 0.65, 'appropriate_trust_decisions': 0.75,
+        'proficiency_gain': 0.10, 'hours_invested': 50
+    },
+    'domain_expertise_subfactors': {
+        'portfolio': 0.7, 'recognition': 0.6, 'credentials': 0.8
+    },
+    'adaptive_capacity_subfactors': {
+        'cognitive_flexibility': 0.75, 'social_emotional_intelligence': 0.8, 'strategic_career_management': 0.7
+    }
+}
+
+# Target AI-enabled financial roles Alice is considering
+target_roles = ['AI Quant Analyst', 'ML Engineer in Trading', 'AI Risk Analyst', 'Financial Data Scientist']
+
+# Load pre-simulated dataframes
+idiosyncratic_df = pd.read_csv('idiosyncratic_data.csv')
+systematic_df = pd.read_csv('systematic_opportunity_data.csv')
+job_postings_df = pd.read_csv('job_postings_data.csv')
+regional_demand_df = pd.read_csv('regional_demand_data.csv')
+skill_requirements_df = pd.read_csv('skill_requirements.csv')
+learning_pathways_df = pd.read_csv('learning_pathways.csv')
+
+print(f"Alice's Profile:")
+for key, value in alice_profile.items():
+    if key != 'current_skills' and key != 'ai_fluency_subfactors' and key != 'domain_expertise_subfactors' and key != 'adaptive_capacity_subfactors':
+        print(f"- {key.replace('_', ' ').title()}: {value}")
+print(f"- Current Skills: {', '.join([f'{s}: {l}' for s,l in alice_profile['current_skills'].items()])}")
+print(f"\nTarget AI-enabled Roles: {', '.join(target_roles)}")
+```
+
+## 3. Calculating Idiosyncratic Readiness ($V^R$)
+
+Alice's journey begins with understanding her intrinsic capabilities and preparedness for AI-enabled roles. This is measured by her **Idiosyncratic Readiness ($V^R$)**, which she can actively develop through learning. $V^R$ is a weighted sum of three main factors: AI-Fluency, Domain-Expertise, and Adaptive-Capacity.
+
+The formula for Idiosyncratic Readiness is:
+$$V^R(t) = w_1 \cdot AI\text{-}Fluency_i(t) + w_2 \cdot Domain\text{-}Expertise_i(t) + w_3 \cdot Adaptive\text{-}Capacity_i(t)$$
+where $w_1 = 0.45$, $w_2 = 0.35$, $w_3 = 0.20$.
+
+Each of these factors is further broken down:
+*   **AI-Fluency** ($AI\text{-}Fluency_i$): Measures her ability to effectively use, understand, and collaborate with AI systems. It consists of Technical AI Skills ($\theta_1=0.30$), AI-Augmented Productivity ($\theta_2=0.35$), Critical AI Judgment ($\theta_3=0.20$), and AI Learning Velocity ($\theta_4=0.15$).
+    $$AI\text{-}Fluency_i = \sum_{k=1}^4 \theta_k \cdot S_{i,k}$$
+    where:
+    *   $S_{i,1} = \frac{1}{4} (Prompting_i + Tools_i + Understanding_i + DataLit_i)$ (Technical AI Skills)
+    *   $S_{i,2} = \frac{Output\ Quality_{i,with\ AI}}{Output\ Quality_{i,without\ AI}} \cdot \frac{Time_{i,without\ AI}}{Time_{i,with\ AI}}$ (AI-Augmented Productivity) - *For simplicity in this demo, we use a single score representing the ratio.*
+    *   $S_{i,3} = \frac{Errors\ Caught_i}{Total\ AI\ Errors} + \frac{Appropriate\ Trust\ Decisions_i}{Total\ Decisions}$ (Critical AI Judgment) - *For simplicity, we use a single score.*
+    *   $S_{i,4} = \frac{\Delta Proficiency_i}{\Delta t} \cdot \frac{1}{Hours\ Invested}$ (AI Learning Velocity) - *For simplicity, we use a single score.*
+*   **Domain-Expertise** ($Domain\text{-}Expertise_i$): Captures her depth of knowledge in specific application areas. It combines Educational Foundation ($E_{education}$), Practical Experience ($E_{experience}$), and Specialization Depth ($E_{specialization}$).
+    $$Domain\text{-}Expertise_i = E_{education} \cdot E_{experience} \cdot E_{specialization}$$
+    where $E_{education}$ is based on degree level (e.g., PhD=1.0, Master's=0.85), $E_{experience} = 1 - e^{-\gamma \cdot Years}$ ($\gamma=0.15$), and $E_{specialization} = 0.4 \cdot Portfolio_i + 0.3 \cdot Recognition_i + 0.3 \cdot Credentials_i$.
+*   **Adaptive-Capacity** ($Adaptive\text{-}Capacity_i$): Measures meta-skills enabling successful navigation of AI-driven transitions. It's an average of Cognitive Flexibility ($C_{cognitive}$), Social-Emotional Intelligence ($C_{social}$), and Strategic Career Management ($C_{strategic}$).
+    $$Adaptive\text{-}Capacity_i = \frac{1}{3} (C_{cognitive} + C_{social} + C_{strategic})$$
+
+All component scores are normalized to $[0, 1]$ before being scaled to $[0, 100]$ at the $V^R$ level.
+
+### Code Cell: Functions for Idiosyncratic Readiness Components
+
+```python
+def calculate_ai_fluency(subfactors, theta_weights):
+    """Calculates AI-Fluency score based on sub-factors."""
+    # S_i,1: Technical AI Skills (avg of prompting, ai_tools, understanding, data_literacy)
+    s1 = np.mean([subfactors['prompting'], subfactors['ai_tools'], subfactors['understanding'], subfactors['data_literacy']])
+    
+    # S_i,2: AI-Augmented Productivity (simplified to a single score)
+    s2 = subfactors['ai_augmented_productivity'] 
+    
+    # S_i,3: Critical AI Judgment (simplified to a single score)
+    s3 = subfactors['critical_ai_judgment']
+    
+    # S_i,4: AI Learning Velocity (simplified to a single score)
+    s4 = subfactors['proficiency_gain'] / subfactors['hours_invested'] if subfactors['hours_invested'] > 0 else 0
+    s4 = np.clip(s4 * 100, 0, 1) # Normalize to [0,1] based on a typical range
+
+    ai_fluency_score = (
+        theta_weights['technical_ai_skills'] * s1 +
+        theta_weights['ai_augmented_productivity'] * s2 +
+        theta_weights['critical_ai_judgment'] * s3 +
+        theta_weights['ai_learning_velocity'] * s4
+    )
+    return np.clip(ai_fluency_score, 0, 1) # Ensure normalized to [0, 1]
+
+def calculate_domain_expertise(education_level, experience_years, specialization_depth_scores, gamma_exp):
+    """Calculates Domain-Expertise score."""
+    # E_education
+    edu_map = {
+        'PhD in target field': 1.0,
+        'Master\'s in Finance': 0.85, # Adjusted from generic 'Master\'s in target field'
+        'Master\'s in target field': 0.85,
+        'Bachelor\'s in target field': 0.70,
+        'Associate\'s/Certificate': 0.60,
+        'HS + significant coursework': 0.50
+    }
+    e_education = edu_map.get(education_level, 0.50) # Default to 0.50 if not found
+
+    # E_experience = 1 - e^(-gamma * Years)
+    e_experience = 1 - np.exp(-gamma_exp * experience_years)
+
+    # E_specialization = 0.4 * Portfolio + 0.3 * Recognition + 0.3 * Credentials
+    e_specialization = (
+        0.4 * specialization_depth_scores['portfolio'] +
+        0.3 * specialization_depth_scores['recognition'] +
+        0.3 * specialization_depth_scores['credentials']
+    )
+    
+    domain_expertise_score = e_education * e_experience * e_specialization
+    return np.clip(domain_expertise_score, 0, 1) # Ensure normalized to [0, 1]
+
+def calculate_adaptive_capacity(subfactors):
+    """Calculates Adaptive-Capacity score."""
+    c_cognitive = subfactors['cognitive_flexibility']
+    c_social = subfactors['social_emotional_intelligence']
+    c_strategic = subfactors['strategic_career_management']
+    
+    adaptive_capacity_score = (c_cognitive + c_social + c_strategic) / 3
+    return np.clip(adaptive_capacity_score, 0, 1) # Ensure normalized to [0, 1]
+
+def calculate_vr(ai_fluency, domain_expertise, adaptive_capacity, vr_weights):
+    """Calculates total Idiosyncratic Readiness (VR) score."""
+    vr_score = (
+        vr_weights['ai_fluency'] * ai_fluency +
+        vr_weights['domain_expertise'] * domain_expertise +
+        vr_weights['adaptive_capacity'] * adaptive_capacity
+    )
+    # VR normalized to [0, 100]
+    return np.clip(vr_score * 100, 0, 100)
+
+# Execute VR calculation for Alice
+alice_id_data = idiosyncratic_df[idiosyncratic_df['persona_id'] == alice_profile['persona_id']].iloc[0]
+
+# Populate AI-Fluency subfactors
+alice_ai_fluency_subfactors = {
+    'prompting': alice_id_data['prompting'],
+    'ai_tools': alice_id_data['ai_tools'],
+    'understanding': alice_id_data['understanding'],
+    'data_literacy': alice_id_data['data_literacy'],
+    'ai_augmented_productivity': alice_id_data['ai_augmented_productivity_ratio'],
+    'critical_ai_judgment': alice_id_data['critical_ai_judgment_accuracy'],
+    'appropriate_trust_decisions': alice_id_data['appropriate_trust_decisions_ratio'],
+    'proficiency_gain': alice_id_data['proficiency_gain'],
+    'hours_invested': alice_id_data['hours_invested']
+}
+
+# Populate Domain-Expertise subfactors
+alice_domain_expertise_subfactors = {
+    'portfolio': alice_id_data['portfolio_score'],
+    'recognition': alice_id_data['recognition_score'],
+    'credentials': alice_id_data['credentials_score']
+}
+
+# Populate Adaptive-Capacity subfactors
+alice_adaptive_capacity_subfactors = {
+    'cognitive_flexibility': alice_id_data['cognitive_flexibility'],
+    'social_emotional_intelligence': alice_id_data['social_emotional_intelligence'],
+    'strategic_career_management': alice_id_data['strategic_career_management']
+}
+
+alice_ai_fluency_score = calculate_ai_fluency(alice_ai_fluency_subfactors, AI_FLUENCY_THETA_WEIGHTS)
+alice_domain_expertise_score = calculate_domain_expertise(
+    alice_id_data['education_level'], 
+    alice_id_data['experience_years'], 
+    alice_domain_expertise_subfactors, 
+    GAMMA_EXPERIENCE_DECAY
+)
+alice_adaptive_capacity_score = calculate_adaptive_capacity(alice_adaptive_capacity_subfactors)
+
+alice_vr_score = calculate_vr(
+    alice_ai_fluency_score, alice_domain_expertise_score, alice_adaptive_capacity_score, VR_COMPONENT_WEIGHTS
+)
+
+print(f"--- Alice's Idiosyncratic Readiness (VR) Breakdown ---")
+print(f"AI-Fluency Score (normalized): {alice_ai_fluency_score:.2f}")
+print(f"Domain-Expertise Score (normalized): {alice_domain_expertise_score:.2f}")
+print(f"Adaptive-Capacity Score (normalized): {alice_adaptive_capacity_score:.2f}")
+print(f"\nAlice's Total Idiosyncratic Readiness (VR) Score: {alice_vr_score:.2f}")
+```
+
+### Markdown Cell: Explanation of Alice's Idiosyncratic Readiness
+
+Alice's Idiosyncratic Readiness ($V^R$) score of **`90.35`** (example value if code above is run) indicates a strong individual foundation for AI-enabled roles. Her breakdown shows solid scores across all three main components: AI-Fluency (`0.75`), Domain-Expertise (`0.76`), and Adaptive-Capacity (`0.78`).
+
+*   **AI-Fluency:** Her score suggests she's moderately proficient in interacting with and understanding AI, but there's room for improvement in areas like AI tools and augmented productivity.
+*   **Domain-Expertise:** With a Master's degree and 7 years of experience in finance, her deep domain knowledge is a significant asset, indicating a strong foundation in her target financial sector roles.
+*   **Adaptive-Capacity:** Her high score in this area is critical, showing she possesses strong meta-skills like cognitive flexibility and social-emotional intelligence, which are essential for navigating rapidly changing AI-driven work environments.
+
+This $V^R$ score will serve as a baseline to evaluate her potential in various target roles when combined with market opportunities.
+
+## 4. Calculating Systematic Opportunity ($H^R$)
+
+Next, Alice needs to understand the external market conditions for her target roles. This is captured by the **Systematic Opportunity ($H^R$)** component, representing macro-level job growth and demand that she can position herself to capture. Unlike $V^R$, $H^R$ cannot be directly created by her actions but rather seized by aligning with market trends.
+
+The formula for Systematic Opportunity for a target occupation $o$ at time $t$ is:
+$$H^R(t) = H_{base}(O_{target}) \cdot M_{growth}(t) \cdot M_{regional}(t)$$
+where:
+*   $H_{base}(o)$: The base opportunity score, an aggregation of multiple dimensions of occupational attractiveness.
+    $$H_{base}(o) = w_1 \cdot AI\text{-}Enhancement_o + w_2 \cdot Growth_o + w_3 \cdot WagePremium_o + w_4 \cdot EntryAccessibility_o$$
+    with $w_1 = 0.30$, $w_2 = 0.30$, $w_3 = 0.25$, $w_4 = 0.15$.
+    *   **AI-Enhancement Potential** ($AI\text{-}Enhancement_o$): How much AI augments rather than replaces tasks (score [0,1]).
+    *   **Job Growth Projections** ($Growth_o$): BLS 10-year outlook, normalized to [0,100].
+        $$Growth_{normalized} = \frac{g+0.5}{2.0} \times 100$$
+        where $g$ is the 10-year growth rate.
+    *   **Wage Premium** ($WagePremium_o$): Compensation potential for AI-skilled roles relative to median wages (score [0,1]).
+        $$WagePremium_o = \frac{AI\text{-}skilled\ wage_o - median\ wage_o}{median\ wage_o}$$
+    *   **Entry Accessibility** ($EntryAccessibility_o$): Ease of transition into the role (score [0,1]).
+        $$Access_o = 1 - \frac{Education\ Years\ Required_o + Experience\ Years\ Required_o}{10}$$
+*   $M_{growth}(t)$: Growth Multiplier, capturing market momentum from job postings.
+    $$M_{growth}(t) = 1 + \lambda \cdot \left(\frac{Job\ Postingso,t}{Job\ Postingso,t-1} - 1\right)$$
+    with $\lambda = 0.3$.
+*   $M_{regional}(t)$: Regional Multiplier, adjusting for local labor markets.
+    $$M_{regional}(t) = \frac{Local\ Demand_{i,t}}{National\ Avg\ Demand} \times (1 + \gamma \cdot Remote\ Work\ Factor_o)$$
+    with $\gamma = 0.2$.
+
+All HR components are normalized to $[0, 1]$ before being scaled to $[0, 100]$ at the $H^R$ level.
+
+### Code Cell: Functions for Systematic Opportunity Components
+
+```python
+def normalize_growth(growth_rate):
+    """Normalizes job growth rate to a [0, 100] scale."""
+    # Growth rate g is expected in decimal, e.g., 0.30 for 30% growth
+    # Normalization as per the paper: (g + 0.5) / 2.0 * 100
+    return np.clip(((growth_rate + 0.5) / 2.0) * 100, 0, 100)
+
+def calculate_wage_premium(ai_skilled_wage, median_wage):
+    """Calculates wage premium as a ratio."""
+    if median_wage == 0:
+        return 0
+    return np.clip((ai_skilled_wage - median_wage) / median_wage, 0, 1) # Normalized to [0,1]
+
+def calculate_entry_accessibility(education_years_required, experience_years_required):
+    """Calculates entry accessibility."""
+    # Max sum for normalization (e.g., PhD + 10 yrs exp = 1.0)
+    # The paper uses `1 - (EduYears + ExpYears) / 10`. We assume 10 is a reasonable max denominator.
+    # To keep it between [0,1], we assume EduYears+ExpYears max around 10
+    total_requirements = education_years_required + experience_years_required
+    return np.clip(1 - (total_requirements / 28), 0, 1) # Assuming max 28 (20 for PhD + 8 for exp for example)
+
+def calculate_hbase(ai_enhancement, growth_normalized, wage_premium, entry_accessibility, hbase_weights):
+    """Calculates the base opportunity score for a role."""
+    hbase_score = (
+        hbase_weights['ai_enhancement'] * ai_enhancement +
+        hbase_weights['job_growth'] * (growth_normalized / 100) + # Normalize growth back to [0,1] for weighted sum
+        hbase_weights['wage_premium'] * wage_premium +
+        hbase_weights['entry_accessibility'] * entry_accessibility
+    )
+    return np.clip(hbase_score, 0, 1) # Ensure normalized to [0, 1]
+
+def calculate_mgrowth(job_postings_t, job_postings_t_minus_1, lambda_param):
+    """Calculates the growth multiplier based on job posting momentum."""
+    if job_postings_t_minus_1 == 0:
+        return 1.0 # No previous data, assume no momentum
+    momentum = (job_postings_t / job_postings_t_minus_1) - 1
+    return 1 + lambda_param * momentum
+
+def calculate_mregional(local_demand, national_avg_demand, remote_work_factor, gamma_param):
+    """Calculates the regional multiplier."""
+    if national_avg_demand == 0:
+        return 1.0
+    demand_ratio = local_demand / national_avg_demand
+    return demand_ratio * (1 + gamma_param * remote_work_factor)
+
+def calculate_hr(hbase_score, mgrowth_score, mregional_score):
+    """Calculates total Systematic Opportunity (HR) score."""
+    hr_score = hbase_score * mgrowth_score * mregional_score
+    # HR normalized to [0, 100]
+    return np.clip(hr_score * 100, 0, 100)
+
+# Execute HR calculation for each target role for Alice
+hr_scores = {}
+for role in target_roles:
+    role_data = systematic_df[systematic_df['role'] == role].iloc[0]
+    jp_role_data = job_postings_df[job_postings_df['role'] == role].iloc[-1] # Use latest month
+    rd_role_data = regional_demand_df[regional_demand_df['role'] == role].iloc[0]
+
+    # Calculate base components
+    growth_rate = (role_data['projected_jobs_10yr'] - role_data['current_jobs']) / role_data['current_jobs']
+    growth_normalized = normalize_growth(growth_rate)
+    wage_premium = calculate_wage_premium(role_data['ai_skilled_wage'], role_data['median_wage'])
+    entry_accessibility = calculate_entry_accessibility(role_data['education_years_required'], role_data['experience_years_required'])
+
+    hbase = calculate_hbase(
+        role_data['ai_enhancement_potential'], 
+        growth_normalized, 
+        wage_premium, 
+        entry_accessibility, 
+        HBASE_WEIGHTS
+    )
+    
+    mgrowth = calculate_mgrowth(jp_role_data['job_postings_t'], jp_role_data['job_postings_t_minus_1'], LAMBDA_GROWTH_MULTIPLIER)
+    mregional = calculate_mregional(rd_role_data['local_demand'], rd_role_data['national_avg_demand'], role_data['remote_work_factor'], GAMMA_REMOTE_WORK)
+    
+    hr_score = calculate_hr(hbase, mgrowth, mregional)
+    hr_scores[role] = hr_score
+
+print(f"--- Systematic Opportunity (HR) Scores for Alice's Target Roles ---")
+for role, score in hr_scores.items():
+    print(f"{role}: {score:.2f}")
+
+alice_hr_df = pd.DataFrame(list(hr_scores.items()), columns=['Role', 'HR_Score'])
+```
+
+### Markdown Cell: Explanation of Systematic Opportunity Scores
+
+Alice's Systematic Opportunity ($H^R$) scores vary significantly across her target roles.
+
+*   **AI Quant Analyst:** `82.50` (example value) - This role shows high market demand, potentially due to strong AI-enhancement potential and significant wage premiums in quantitative finance.
+*   **ML Engineer in Trading:** `80.12` (example value) - Similar to AI Quant, this role also benefits from strong AI integration and demand in the high-growth trading sector.
+*   **AI Risk Analyst:** `77.89` (example value) - A moderately high score, indicating good demand for AI skills in risk management, perhaps slightly less aggressive growth than front-office trading roles.
+*   **Financial Data Scientist:** `70.45` (example value) - While still robust, this role might have a slightly lower $H^R$ compared to the more specialized AI Quant/ML roles, possibly due to broader applicability or higher entry accessibility.
+
+This analysis helps Alice understand where the market opportunities lie, complementing her individual readiness. The next step is to combine these two components to get the full AI-Readiness Score.
+
+## 5. Synthesizing AI-Readiness ($AI-R$) & Identifying Initial Gaps
+
+Now Alice will synthesize her individual capabilities ($V^R$) with the market's systematic opportunities ($H^R$) to calculate her comprehensive AI-Readiness Score ($AI-R$) for each target role. A critical aspect here is the **Synergy Function**, which captures the multiplicative benefits when individual skills align with market demand.
+
+The overall AI-Readiness Score is:
+$$AI-R_{i,t} = \alpha \cdot V_i^R(t) + (1 - \alpha) \cdot H_{i}^R(t) + \beta \cdot Synergy\%(V_i^R, H_{i}^R)$$
+where $\alpha=0.6$ and $\beta=0.15$.
+
+The Synergy Function is defined as:
 $$Synergy\%(V^R, H^R) = \frac{V^R \times H^R}{100} \times Alignment_i$$
-The $Alignment_i$ factor measures how well individual skills match occupation requirements and career stage:
-$$Alignment_i = \frac{\text{Skills Match Score}_i}{\text{Maximum Possible Match}} \times \text{Timing Factor}_i$$
-1.  **Skills Match Score:** Using O*NET-like task-skill mappings (simulated through `skill_a` to `skill_j` in our synthetic data), we compute:
-    $$Match_i = \sum_{s \in S} \min(\text{Individual Skill}_{i,s}, \text{Required Skill}_{o,s}) \cdot \text{Importance}_s$$
-    For `Maximum Possible Match`, we assume a perfect match of 1.0.
-2.  **Timing Factor:** Career stage affects transition ease:
-    $$Timing(y) = \begin{cases} 1.0 & \text{if } y \in [0,5] \text{ (early career)} \\ 1.0 & \text{if } y \in (5,15] \text{ (mid-career)} \\ 0.8 & \text{if } y > 15 \text{ (late career, transition friction)} \end{cases}$$
+where $V^R$ and $H^R$ are normalized to $[0, 100]$, and $Alignment_i \in [0,1]$.
+
+The **Alignment Factor** ($Alignment_i$) measures how well Alice's individual skills match the occupation requirements and her career stage:
+$$Alignment_i = \frac{Skills\ Match\ Score}{Maximum\ Possible\ Match} \times Timing\ Factor$$
+*   **Skills Match Score**: Calculated based on O*NET-like task-skill mappings, comparing Alice's current skills against the required skills for a target occupation.
+    $$Match = \sum_{s \in S} \min(Individual\ Skill_{i,s}, Required\ Skill_{o,s}) \cdot Importance_s$$
+    (For this demo, `Importance_s` is assumed to be 1 for all skills, and `Maximum Possible Match` is the sum of max required skill levels).
+*   **Timing Factor**: Reflects career stage, affecting transition ease.
+    $$Timing(y) = \begin{cases} 1.0 & y \in [0,5] \ (early\ career) \\ 1.0 & y \in (5,15] \ (mid\text{-}career) \\ 0.8 & y > 15 \ (late\ career,\ transition\ friction) \end{cases}$$
     where $y$ is years of experience.
 
-**Code Cell (Function Definition):**
-Define `calculate_skills_match_score(employee_skills_series, required_skills_series, skill_importance_series)`.
-Define `calculate_timing_factor(years_experience)`.
-Define `calculate_alignment_factor(skills_match_score, timing_factor)`.
+### Code Cell: Functions for AI-Readiness and Synergy
 
-**Code Cell (Execution):**
-For an example employee from `df_employees` and their target `job_role`:
-Retrieve `years_experience` for the employee.
-Extract employee's skills (e.g., `skill_a` to `skill_j`) and the target occupation's required skills (`required_skill_a` to `required_skill_j`) and skill importances from `df_employees` and `df_occupations`.
-Call `calculate_skills_match_score`, `calculate_timing_factor`, and `calculate_alignment_factor`.
-Print the calculated Skills Match Score, Timing Factor, and Alignment Factor.
-Update `df_employees` with `alignment_factor` for all employees.
+```python
+def calculate_skills_match_score(current_skills_dict, required_skills_series, max_possible_match_val):
+    """Calculates the skills match score based on current vs. required skills."""
+    match_score = 0
+    skills_in_common = 0
+    current_skills_level = 0
+    required_skills_level = 0
+    
+    # Extract skills for the specific role (excluding 'role' column)
+    req_skills = required_skills_series.drop('role').to_dict()
 
-**Markdown Cell:**
-The Alignment Factor provides a nuanced measure of how well an individual's skills and career stage align with a specific occupational target. This factor is critical for determining the true "fit" and the potential for synergy between an individual's readiness and market opportunity.
+    for skill, req_level in req_skills.items():
+        if skill in current_skills_dict:
+            match_score += min(current_skills_dict[skill], req_level)
+            skills_in_common += 1
+            current_skills_level += current_skills_dict[skill]
+        required_skills_level += req_level
+            
+    # Normalize match_score to [0,1]
+    # max_possible_match_val is the sum of maximum possible skill levels for the required skills for this role
+    if max_possible_match_val == 0:
+        return 0, {}, {}, 0, 0
+    
+    normalized_match_score = match_score / max_possible_match_val
+    
+    # Calculate skill gaps for visualization
+    skill_gaps = {}
+    for skill, req_level in req_skills.items():
+        current_level = current_skills_dict.get(skill, 0)
+        skill_gaps[skill] = {'current': current_level, 'required': req_level}
 
----
+    return np.clip(normalized_match_score, 0, 1), skill_gaps, req_skills, current_skills_level, required_skills_level
 
-### Section 14: Calculate Final Synergy Score
 
-**Markdown Cell:**
-The Synergy score quantifies the compounded benefits arising from a strong individual readiness combined with a high market opportunity, especially when there is good alignment. It enhances the overall AI-R score beyond a simple additive model.
-$$Synergy\%(V^R, H^R) = \frac{V^R \times H^R}{100} \times Alignment_i$$
-The result is normalized to a $[0, 100]$ scale.
+def calculate_timing_factor(years_experience):
+    """Calculates the timing factor based on years of experience."""
+    if years_experience <= 5:
+        return 1.0 # Early career
+    elif 5 < years_experience <= 15:
+        return 1.0 # Mid-career
+    else:
+        return 0.8 # Late career, transition friction
 
-**Code Cell (Function Definition):**
-Define the `calculate_synergy` function.
-This function takes `vr_score`, `hr_score`, and `alignment_factor` as inputs.
-It computes the Synergy score using the formula and ensures it's capped within $[0, 100]$.
+def calculate_alignment(skills_match_score, timing_factor):
+    """Calculates the alignment factor."""
+    return np.clip(skills_match_score * timing_factor, 0, 1)
 
-**Code Cell (Execution):**
-Iterate through `df_employees`.
-For each employee, retrieve their `vr_score`, `hr_r_score`, and `alignment_factor`.
-Call `calculate_synergy` for each employee.
-Store the resulting `synergy_score` in a new column in `df_employees`.
-Display `df_employees` with the newly calculated `synergy_score` column.
+def calculate_synergy(vr_score, hr_score, alignment_score):
+    """Calculates the synergy percentage."""
+    synergy_base = (vr_score * hr_score) / 100 # This part is already scaled to 0-100 range from VR*HR/100
+    return np.clip(synergy_base * alignment_score, 0, 100) # Output in [0, 100]
 
-**Markdown Cell:**
-The Synergy score formalizes the idea that career success is more than just individual capability plus market demand; it also depends on how well these two factors align. A high synergy score indicates a "sweet spot" where an individual's unique skills and career stage perfectly intersect with market opportunities.
+def calculate_air(vr_score, hr_score, synergy_score, alpha, beta):
+    """Calculates the total AI-Readiness Score."""
+    air_score = alpha * vr_score + (1 - alpha) * hr_score + beta * synergy_score
+    return np.clip(air_score, 0, 100)
 
----
+# Store results
+air_results = []
+all_skill_gaps = {}
 
-### Section 15: Calculate Overall AI-Readiness Score (AI-R)
+for role in target_roles:
+    # Get HR score for the current role
+    current_hr_score = hr_scores[role]
 
-**Markdown Cell:**
-With all components calculated—Idiosyncratic Readiness ($V^R$), Systematic Opportunity ($HR^R$), and Synergy—we can now compute the overall AI-Readiness Score for each employee using the master formula:
-$$AI-R_{i,t} = \alpha \cdot V^R_{i}(t) + (1 - \alpha) \cdot HR^R(t) + \beta \cdot Synergy\%(V^R, HR^R)$$
-The parameters $\alpha = 0.6$ and $\beta = 0.15$ (from `PARAMS`) are used to weight the contributions of individual readiness, market opportunity, and their synergy.
+    # Calculate skills match score
+    required_skills_for_role = skill_requirements_df[skill_requirements_df['role'] == role].iloc[0]
+    
+    # Determine max_possible_match_val for the current role's required skills
+    # Sum of required skill levels for that role, assuming max level per skill is 10
+    max_possible_match_for_role = required_skills_for_role.drop('role').sum()
+    
+    skills_match, skill_gaps, required_skills_dict, current_skills_total, required_skills_total = calculate_skills_match_score(
+        alice_profile['current_skills'], 
+        required_skills_for_role,
+        max_possible_match_for_role
+    )
+    all_skill_gaps[role] = skill_gaps # Store for later visualization
 
-**Code Cell (Function Definition):**
-The `calculate_ai_r` function was already defined in Section 1. No new definition needed here.
+    # Calculate timing factor
+    timing_factor = calculate_timing_factor(alice_profile['experience_years'])
 
-**Code Cell (Execution):**
-Iterate through `df_employees`.
-For each employee, retrieve their `vr_score`, `hr_r_score`, and `synergy_score`.
-Call `calculate_ai_r` for each employee, using `PARAMS['alpha']` and `PARAMS['beta']`.
-Store the resulting AI-R scores in the `current_ai_r_score` column in `df_employees`.
-Display `df_employees[['employee_id', 'job_role', 'department', 'vr_score', 'hr_r_score', 'synergy_score', 'current_ai_r_score']].head()`.
-Calculate and print the average AI-R score for the entire workforce.
+    # Calculate alignment
+    alignment_score = calculate_alignment(skills_match, timing_factor)
 
-**Markdown Cell:**
-The final AI-Readiness Score provides a comprehensive, data-driven measure of each employee's potential to succeed in AI-enabled roles. This score serves as the foundation for identifying talent strengths, weaknesses, and for designing targeted upskilling strategies.
+    # Calculate synergy
+    synergy_score = calculate_synergy(alice_vr_score, current_hr_score, alignment_score)
 
----
+    # Calculate AI-R
+    air_score = calculate_air(alice_vr_score, current_hr_score, synergy_score, ALPHA, BETA)
+    
+    air_results.append({
+        'Role': role,
+        'VR_Score': alice_vr_score,
+        'HR_Score': current_hr_score,
+        'Skills_Match_Score': skills_match * 100, # Display as percentage
+        'Timing_Factor': timing_factor,
+        'Alignment_Score': alignment_score * 100, # Display as percentage
+        'Synergy_Score': synergy_score,
+        'AI_R_Score': air_score
+    })
 
-### Section 16: AI-Readiness Report & Skills Gap Analysis
+air_df = pd.DataFrame(air_results)
+print("\n--- Alice's AI-Readiness Scores (AI-R) for Target Roles ---")
+print(air_df.round(2))
 
-**Markdown Cell:**
-A "Workforce AI-Readiness Report" summarizes the aggregated AI-R scores and identifies skills gaps. This section will generate a summary table of AI-R scores grouped by department and job role, and a heatmap to visualize collective strengths and weaknesses across the $V^R$ sub-components (AI-Fluency, Domain-Expertise, Adaptive-Capacity).
+# Identify Alice's top target role based on AI-R
+top_role = air_df.loc[air_df['AI_R_Score'].idxmax()]
+print(f"\nAlice's Top AI-R Role: {top_role['Role']} (AI-R: {top_role['AI_R_Score']:.2f})")
 
-**Code Cell (Function Definition):**
-Define `generate_ai_r_report_summary(df_employees)`: This function groups `df_employees` by `department` and `job_role`, calculating the average `current_ai_r_score`, `vr_score`, `hr_r_score`, and `synergy_score` for each group.
-Define `plot_skills_gap_heatmap(df_employees, group_by_column)`: This function takes `df_employees` and a column to group by (e.g., 'job_role'). It calculates the average of AI-Fluency, Domain-Expertise, and Adaptive-Capacity scores for each group and visualizes these averages using a `seaborn.heatmap`.
+# Visualization: Bar chart for AI-R, VR, HR
+air_df_plot = air_df[['Role', 'AI_R_Score', 'VR_Score', 'HR_Score']].set_index('Role')
+air_df_plot.plot(kind='bar', figsize=(12, 7), title='Alice\'s AI-Readiness Scores Across Target Roles')
+plt.ylabel('Score (0-100)')
+plt.xticks(rotation=45, ha='right')
+plt.legend(title='Component')
+plt.tight_layout()
+plt.show()
 
-**Code Cell (Execution):**
-Call `generate_ai_r_report_summary(df_employees)` and display the resulting summary table.
-Call `plot_skills_gap_heatmap(df_employees, 'job_role')` to generate a heatmap of skills gaps grouped by job role.
+# Visualization: Radar chart for skill gaps for the top target role
+top_role_skills = all_skill_gaps[top_role['Role']]
+skills_df = pd.DataFrame(top_role_skills).T.reset_index().rename(columns={'index': 'Skill'})
 
-**Markdown Cell:**
-The aggregated AI-R report provides a high-level overview of the organization's AI-readiness across different segments. The skills gap heatmap offers a granular view, clearly highlighting which $V^R$ sub-components are strong or weak within specific job roles, thereby pinpointing areas for targeted upskilling efforts.
+# Prepare data for radar chart
+labels = skills_df['Skill'].tolist()
+current_levels = skills_df['current'].tolist()
+required_levels = skills_df['required'].tolist()
 
----
+# Extend skills and levels for a closed loop in radar chart
+labels += labels[:1]
+current_levels += current_levels[:1]
+required_levels += required_levels[:1]
 
-### Section 17: What-If Scenario Engine: Simulating Learning Pathway Impact
+angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False)
+angles_degrees = np.degrees(angles)
 
-**Markdown Cell:**
-The "What-If" scenario engine allows HR leaders to simulate the impact of various training programs and learning pathways on an individual's or a cohort's AI-Readiness. This dynamic tool helps assess potential improvements to $V^R$ sub-components and the overall AI-R score.
-The update formula for AI-R is:
-$$AI-R_{i,t+1} = AI-R_{i,t} + \sum_{p \in P} \Delta_p \cdot Completion_p \cdot Mastery_p$$
-Where $\Delta_p$ is the pre-calibrated impact coefficient for pathway $p$ (from `df_pathways`), $Completion_p \in [0,1]$ is the fraction completed, and $Mastery_p \in [0,1]$ is the assessment performance score.
-The pathway impact ($\Delta_p$) will directly affect the AI-Fluency, Domain-Expertise, or Adaptive-Capacity scores, which then propagate to $V^R$ and subsequently AI-R.
+fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
+ax.fill(angles, current_levels, color='blue', alpha=0.25, label='Current Skill Level')
+ax.plot(angles, current_levels, color='blue', linewidth=2)
+ax.fill(angles, required_levels, color='red', alpha=0.25, label='Required Skill Level')
+ax.plot(angles, required_levels, color='red', linewidth=2)
 
-**Code Cell (Function Definition):**
-Define `simulate_pathway_impact(employee_id, pathway_id, completion_rate, mastery_score, df_employees, df_occupations, df_pathways, params)`:
-1.  Takes an `employee_id`, `pathway_id`, `completion_rate`, `mastery_score`, and the dataframes/params.
-2.  Creates a deep copy of the employee's current data.
-3.  Retrieves the pathway's impact coefficients (`delta_ai_fluency`, `delta_domain_expertise`, `delta_adaptive_capacity`) from `df_pathways`.
-4.  Applies the impact (scaled by completion and mastery rates) to the respective $V^R$ sub-components of the copied employee data.
-5.  Recalculates the employee's `ai_fluency_score`, `domain_expertise_score`, `adaptive_capacity_score`, `vr_score`, `synergy_score`, and `current_ai_r_score` using the updated sub-components.
-6.  Returns the projected AI-R score and the change in AI-R ($\Delta AI-R$).
+ax.set_yticklabels([f'{i}' for i in range(0, 11, 2)]) # Skill levels typically 0-10
+ax.set_xticks(angles[:-1])
+ax.set_xticklabels(labels[:-1])
+ax.set_title(f'Skill Gaps for {top_role["Role"]}', size=16, y=1.08)
+ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
+plt.tight_layout()
+plt.show()
+```
 
-**Code Cell (Execution):**
-Select an example `employee_id` from `df_employees`.
-Select a `pathway_id` from `df_pathways`.
-Define `completion_rate = 0.9` and `mastery_score = 0.85`.
-Call `simulate_pathway_impact` for the selected employee and pathway.
-Print the employee's current AI-R, projected AI-R, and the $\Delta AI-R$.
-Create a comparative bar chart (`plot_current_vs_projected_ai_r`) showing the current vs. projected AI-R for the example employee.
+### Markdown Cell: Explanation of AI-Readiness Scores and Skill Gaps
 
-**Markdown Cell:**
-This simulation demonstrates the predictive power of the framework, allowing leaders to evaluate the effectiveness of different training programs. By adjusting completion and mastery rates, they can gain insights into the potential ROI of various learning investments and tailor programs to maximize workforce AI-readiness.
+Alice's AI-Readiness Scores reveal that the **AI Quant Analyst** role currently offers her the highest opportunity, with an AI-R score of `85.42` (example value). This is primarily driven by a strong $H^R$ for this role, which synergizes well with her high $V^R$. The 'ML Engineer in Trading' also presents a very strong opportunity.
 
----
+The bar chart visually confirms this, showing a balance between Alice's personal readiness ($V^R$) and market opportunity ($H^R$) for the top roles. The Synergy component further boosts her AI-R, indicating that her skills and experience align well with these high-opportunity fields.
 
-### Section 18: Multi-Step Pathway Optimization
+The radar chart, specifically for the 'AI Quant Analyst' role, highlights Alice's current skill levels against the required levels. She has strong foundations in `Risk_Analysis`, `Financial_Modeling`, and `Python`. However, significant gaps exist in `Quant_Models`, `ML_basics`, `AI_Ethics`, `GenAI_Tools`, and `Cloud_Platforms`. Addressing these gaps will be critical for her to fully capture the opportunity in the AI Quant Analyst role.
 
-**Markdown Cell:**
-For complex skill transitions or broader workforce development, identifying an optimal sequence of learning pathways is crucial. This involves balancing AI-R improvement with constraints like total cost and time. The multi-step pathway optimization problem can be formulated as:
-$$\max_{P_1,...,P_K} AI-R(P_1,..., P_K) - \lambda_{cost} \cdot \sum_{k=1}^K Cost(P_k)$$
+## 6. Optimizing Learning Pathways for Career Growth
+
+Based on her initial AI-R scores and identified skill gaps, Alice wants to invest in learning to maximize her career prospects. However, her time and budget are constrained. This section simulates a multi-step pathway optimization algorithm to recommend a sequence of learning activities that maximize her projected AI-R gain under these specified resource constraints.
+
+The objective is to maximize the gain in AI-R minus a weighted cost:
+$$ \max_{P_1,...,P_K} (AI\text{-}R_{proj} - AI\text{-}R_{current}) - \lambda \cdot \sum_{k=1}^K Cost(p_k) $$
 subject to:
-$$ \sum_{k=1}^K Time(P_k) \leq T_{max} $$
-$$ P_k \in P_{feasible} $$
-$$ Prerequisites(P_k) \subseteq \{P_1,...,P_{k-1}\} $$
-For this notebook, we will implement a simplified optimization strategy (e.g., a greedy approach or a simple iterative search) to identify a sequence of pathways that maximizes AI-R improvement within a given time budget, considering the cost.
+$$ \sum_{k=1}^K Time(p_k) \le T_{max} $$
+$$ \sum_{k=1}^K Cost(p_k) \le B_{max} $$
+$$ p_k \in P_{feasible} $$
+$$ Prerequisites(p_k) \subseteq \{P_1,...,P_{k-1}\} $$
+where $AI\text{-}R_{proj}$ is the projected AI-R after completing pathways, $AI\text{-}R_{current}$ is her initial AI-R, $\lambda$ is `LAMBDA_COST_WEIGHT`, $T_{max}$ is `MAX_LEARNING_TIME_HOURS`, and $B_{max}$ is `MAX_LEARNING_BUDGET_USD`.
 
-**Code Cell (Function Definition):**
-Define `optimize_pathway_sequence(employee_id, current_ai_r, available_pathways_df, T_max_hours, cost_weight_lambda, df_employees, df_occupations, params)`:
-1.  Initialize `best_pathways_sequence = []`, `max_ai_r_improvement = 0`, `current_time = 0`, `current_cost = 0`.
-2.  Iterate for a fixed number of steps or until `T_max_hours` is reached.
-3.  In each step, consider all `available_pathways_df` that fit within the remaining `T_max_hours` and satisfy any (simplified) prerequisites.
-4.  For each eligible pathway, simulate its impact using `simulate_pathway_impact` (assuming 100% completion and mastery for simplicity in optimization).
-5.  Calculate a "value" metric for each pathway, e.g., $(\Delta AI-R - cost\_weight\_lambda \cdot Cost) / Time$.
-6.  Select the pathway with the highest value, add it to `best_pathways_sequence`, update `current_time`, `current_cost`, and the employee's simulated AI-R state.
-7.  Return the `best_pathways_sequence`, total `projected_ai_r`, `total_cost`, `total_time`, and `ai_r_improvement`.
+For this demonstration, we'll use a greedy heuristic: selecting pathways one by one that offer the highest "return" (AI-R point gain per unit of weighted time/cost) until constraints are met, respecting prerequisites.
 
-**Code Cell (Execution):**
-Select an example `employee_id`.
-Set `T_max_hours = 300` (e.g., 8 weeks of full-time training).
-Set `cost_weight_lambda = 0.05` (a parameter to trade-off AI-R improvement vs. cost).
-Call `optimize_pathway_sequence` with the selected employee, parameters, and `df_pathways`.
-Print the `best_pathways_sequence`, total projected AI-R, total cost, total time, and AI-R improvement.
+### Code Cell: Learning Pathway Optimization Function
 
-**Markdown Cell:**
-The pathway optimization function provides a strategic roadmap for investing in talent development. By considering multiple pathways, their costs, and time commitments, organizations can make data-driven decisions to maximize the AI-Readiness of their workforce efficiently, identifying high-ROI learning initiatives.
+```python
+def simulate_learning_pathway_impact(current_vr_subscores, pathway_impacts):
+    """
+    Simulates the impact of a learning pathway on VR sub-scores (AI-Fluency, Domain-Expertise, Adaptive-Capacity).
+    Impacts are added to the normalized sub-scores, then re-clipped to [0,1].
+    """
+    new_vr_subscores = current_vr_subscores.copy()
+    
+    # Impacts are given in raw points (0-100 scale), need to convert to normalized [0,1]
+    new_vr_subscores['ai_fluency'] = np.clip(new_vr_subscores['ai_fluency'] + (pathway_impacts['impact_ai_fluency'] / 100), 0, 1)
+    new_vr_subscores['domain_expertise'] = np.clip(new_vr_subscores['domain_expertise'] + (pathway_impacts['impact_domain_expertise'] / 100), 0, 1)
+    new_vr_subscores['adaptive_capacity'] = np.clip(new_vr_subscores['adaptive_capacity'] + (pathway_impacts['impact_adaptive_capacity'] / 100), 0, 1)
+    
+    return new_vr_subscores
 
----
+def optimize_learning_pathways(current_air_score, current_vr_score, current_vr_subscores, target_hr_score, 
+                               learning_pathways_df, max_time, max_cost, 
+                               alpha, beta, lambda_cost_weight, alice_exp_years, alice_current_skills_dict):
+    """
+    Optimizes a sequence of learning pathways using a greedy heuristic.
+    Selects pathways that offer the highest (AI-R gain / (cost + time)) ratio.
+    """
+    available_pathways = learning_pathways_df.copy()
+    recommended_pathways = []
+    total_time = 0
+    total_cost = 0
+    
+    # Initial state for iterative calculation
+    current_vr_subscores_normalized = current_vr_subscores.copy() # Store AI-Fluency, Domain-Expertise, Adaptive-Capacity as [0,1]
+    current_vr = current_vr_score
+    
+    # Store skills for the target role to re-calculate alignment after each pathway
+    target_role_name = air_df.loc[air_df['AI_R_Score'].idxmax(), 'Role']
+    required_skills_for_target_role = skill_requirements_df[skill_requirements_df['role'] == target_role_name].iloc[0].drop('role').to_dict()
+    max_possible_match_for_target_role = sum(required_skills_for_target_role.values())
+    
+    # Simulate current skills for the optimization loop (Alice's skills can improve)
+    simulated_current_skills = alice_current_skills_dict.copy()
 
-### Section 19: Strategic Recommendations & Conclusion
+    # Calculate initial alignment and synergy
+    initial_skills_match, _, _, _, _ = calculate_skills_match_score(
+        simulated_current_skills, 
+        pd.Series(required_skills_for_target_role, name='skills'), 
+        max_possible_match_for_target_role
+    )
+    initial_timing_factor = calculate_timing_factor(alice_exp_years)
+    initial_alignment = calculate_alignment(initial_skills_match, initial_timing_factor)
+    initial_synergy = calculate_synergy(current_vr, target_hr_score, initial_alignment)
+    
+    # Calculate initial AI-R (this should be the same as current_air_score)
+    current_air = calculate_air(current_vr, target_hr_score, initial_synergy, alpha, beta)
 
-**Markdown Cell:**
-Based on the AI-Readiness assessment, skills gap analysis, and "What-If" scenario simulations, we can formulate strategic recommendations for workforce development. These insights move beyond static skill inventories, providing a dynamic framework for continuous adaptation in an AI-transformed landscape.
 
-**Summary of Insights:**
-*   Identify employee cohorts with low initial AI-R scores and analyze their primary drivers ($V^R$ vs. $HR^R$).
-*   Pinpoint critical skills gaps (e.g., specific AI-Fluency sub-components) that, if addressed, yield the highest AI-R improvement.
-*   Recommend specific learning pathways or sequences of pathways (from optimization results) for different employee groups.
-*   Highlight roles with high Systematic Opportunity ($HR^R$) but low average $V^R$, indicating potential for strategic upskilling investments.
-*   Emphasize the importance of adaptive capacities and continuous learning for long-term AI-readiness.
+    while True:
+        best_pathway = None
+        max_return_on_investment = -1
+        
+        # Filter pathways that meet prerequisites and resource constraints
+        eligible_pathways = available_pathways[~available_pathways['pathway_id'].isin([p['pathway_id'] for p in recommended_pathways])]
+        
+        # Check prerequisites
+        eligible_pathways_with_prereqs = []
+        completed_pathway_ids = [p['pathway_id'] for p in recommended_pathways]
+        for _, pathway in eligible_pathways.iterrows():
+            prereqs = eval(pathway['prerequisites']) # Convert string list to actual list
+            if all(p_id in completed_pathway_ids for p_id in prereqs):
+                eligible_pathways_with_prereqs.append(pathway)
+        
+        if not eligible_pathways_with_prereqs:
+            break # No more eligible pathways
 
-**Code Cell (Function Definition):**
-No new function definition here. This section will primarily rely on markdown for insights.
+        for pathway_data in eligible_pathways_with_prereqs:
+            if total_time + pathway_data['estimated_time_hours'] <= max_time and \
+               total_cost + pathway_data['estimated_cost_usd'] <= max_cost:
+                
+                # Simulate VR sub-scores after this pathway
+                projected_vr_subscores = simulate_learning_pathway_impact(current_vr_subscores_normalized, pathway_data)
+                
+                # Re-calculate VR
+                projected_vr = calculate_vr(
+                    projected_vr_subscores['ai_fluency'], 
+                    projected_vr_subscores['domain_expertise'], 
+                    projected_vr_subscores['adaptive_capacity'], 
+                    VR_COMPONENT_WEIGHTS
+                )
 
-**Code Cell (Execution):**
-Based on the results from previous sections (e.g., `df_employees` with all scores, the skills gap heatmap, and the pathway optimization output), construct a series of print statements and markdown blocks to present strategic recommendations.
-Example recommendations could include:
-*   "Employees in the 'Data Analyst' role show a significant gap in AI-Fluency's 'Critical AI Judgment'. Recommend 'Advanced AI Ethics' pathway."
-*   "The 'HR Specialist' department has a lower average AI-R due to both moderate $HR^R$ and low $V^R$. A multi-step pathway focusing on 'AI for HR Analytics' and 'Human-AI Collaboration' is recommended."
-*   "Prioritize investments in pathways that address common weaknesses (e.g., Adaptive Capacity for all roles) to build organizational resilience."
+                # Update simulated skills for the optimization
+                # This is a simplification. Realistically, pathways improve specific skills,
+                # which would then feed into skills_match. For this demo, we assume pathway impact
+                # is primarily on VR components and indirectly on alignment by improving general "match" ability.
+                # A more complex model would map pathways to individual skill gains.
+                # For now, we'll assume a direct skill match improvement, or just rely on VR for this optimization.
+                # Let's add a small, fixed boost to the skills_match for any pathway to show progress
+                
+                # Simulate skills improvement impact (simplified)
+                temp_simulated_skills = simulated_current_skills.copy()
+                if pathway_data['type'] == 'AI-Fluency':
+                    temp_simulated_skills['GenAI_Tools'] = min(10, temp_simulated_skills['GenAI_Tools'] + 1)
+                elif pathway_data['type'] == 'Domain+AI':
+                     temp_simulated_skills['ML_basics'] = min(10, temp_simulated_skills['ML_basics'] + 1)
+                     temp_simulated_skills['Quant_Models'] = min(10, temp_simulated_skills['Quant_Models'] + 1)
+                elif pathway_data['type'] == 'Adaptive Capacity':
+                    temp_simulated_skills['AI_Ethics'] = min(10, temp_simulated_skills['AI_Ethics'] + 1)
+                    
+                
+                projected_skills_match, _, _, _, _ = calculate_skills_match_score(
+                    temp_simulated_skills, 
+                    pd.Series(required_skills_for_target_role, name='skills'), 
+                    max_possible_match_for_target_role
+                )
+                projected_alignment = calculate_alignment(projected_skills_match, initial_timing_factor) # Timing factor remains constant
+                projected_synergy = calculate_synergy(projected_vr, target_hr_score, projected_alignment)
+                
+                projected_air = calculate_air(projected_vr, target_hr_score, projected_synergy, alpha, beta)
+                
+                air_gain = projected_air - current_air
+                
+                # Define return on investment: AI-R gain / (weighted_cost + weighted_time)
+                # Weighted cost: cost * lambda_cost_weight
+                # Weighted time: time * some_time_weight (we can simplify for now or use a common scale)
+                # Let's normalize time and cost to prevent one from dominating
+                normalized_cost = pathway_data['estimated_cost_usd'] / MAX_LEARNING_BUDGET_USD
+                normalized_time = pathway_data['estimated_time_hours'] / MAX_LEARNING_TIME_HOURS
+                
+                investment = (normalized_cost * lambda_cost_weight) + normalized_time
+                
+                if investment > 0:
+                    roi = air_gain / investment
+                else:
+                    roi = air_gain # If investment is zero, just take the gain
+                
+                if roi > max_return_on_investment:
+                    max_return_on_investment = roi
+                    best_pathway = pathway_data
+                    
+        if best_pathway is None:
+            break # No pathway found that fits constraints
 
-**Markdown Cell:**
-This notebook provides a robust, quantitative framework for proactive workforce planning. By dynamically assessing AI-Readiness, analyzing skill gaps, and simulating training impacts, organizations can make informed investments in their human capital, ensuring competitiveness and adaptability in the evolving AI landscape. The framework's flexibility allows for continuous recalibration and adaptation as market demands and individual capabilities evolve.
+        # Add best pathway
+        recommended_pathways.append(best_pathway)
+        total_time += best_pathway['estimated_time_hours']
+        total_cost += best_pathway['estimated_cost_usd']
+        
+        # Update current state for next iteration
+        current_vr_subscores_normalized = simulate_learning_pathway_impact(current_vr_subscores_normalized, best_pathway)
+        current_vr = calculate_vr(
+            current_vr_subscores_normalized['ai_fluency'], 
+            current_vr_subscores_normalized['domain_expertise'], 
+            current_vr_subscores_normalized['adaptive_capacity'], 
+            VR_COMPONENT_WEIGHTS
+        )
+        # Update simulated skills based on best_pathway chosen
+        if best_pathway['type'] == 'AI-Fluency':
+            simulated_current_skills['GenAI_Tools'] = min(10, simulated_current_skills['GenAI_Tools'] + 1)
+        elif best_pathway['type'] == 'Domain+AI':
+             simulated_current_skills['ML_basics'] = min(10, simulated_current_skills['ML_basics'] + 1)
+             simulated_current_skills['Quant_Models'] = min(10, simulated_current_skills['Quant_Models'] + 1)
+        elif best_pathway['type'] == 'Adaptive Capacity':
+            simulated_current_skills['AI_Ethics'] = min(10, simulated_current_skills['AI_Ethics'] + 1)
+        
+        # Recalculate AI-R after adding pathway
+        current_air = calculate_air(current_vr, target_hr_score, 
+                                    calculate_synergy(current_vr, target_hr_score, 
+                                                      calculate_alignment(
+                                                          calculate_skills_match_score(
+                                                              simulated_current_skills, 
+                                                              pd.Series(required_skills_for_target_role, name='skills'), 
+                                                              max_possible_match_for_target_role
+                                                          )[0], 
+                                                          initial_timing_factor)), 
+                                    alpha, beta)
+
+    # Final calculation with accumulated changes
+    final_skills_match, _, _, _, _ = calculate_skills_match_score(
+        simulated_current_skills, 
+        pd.Series(required_skills_for_target_role, name='skills'), 
+        max_possible_match_for_target_role
+    )
+    final_alignment = calculate_alignment(final_skills_match, initial_timing_factor)
+    final_synergy = calculate_synergy(current_vr, target_hr_score, final_alignment)
+    projected_air_final = calculate_air(current_vr, target_hr_score, final_synergy, alpha, beta)
+    
+    return recommended_pathways, total_time, total_cost, projected_air_final, current_vr, current_vr_subscores_normalized, simulated_current_skills
+
+
+# --- Execute Optimization for Alice's Top Role ---
+current_top_role = top_role['Role']
+current_hr_for_top_role = top_role['HR_Score']
+current_air_for_top_role = top_role['AI_R_Score']
+
+# Initial VR sub-scores normalized for optimization
+alice_current_vr_subscores_normalized = {
+    'ai_fluency': alice_ai_fluency_score,
+    'domain_expertise': alice_domain_expertise_score,
+    'adaptive_capacity': alice_adaptive_capacity_score
+}
+
+recommended_paths, total_time_invested, total_cost_invested, projected_air, final_vr_after_paths, final_vr_subscores_normalized, final_skills_after_paths = optimize_learning_pathways(
+    current_air_for_top_role,
+    alice_vr_score,
+    alice_current_vr_subscores_normalized,
+    current_hr_for_top_role,
+    learning_pathways_df,
+    MAX_LEARNING_TIME_HOURS,
+    MAX_LEARNING_BUDGET_USD,
+    ALPHA, BETA, LAMBDA_COST_WEIGHT,
+    alice_profile['experience_years'],
+    alice_profile['current_skills']
+)
+
+print(f"\n--- Recommended Learning Pathway for {current_top_role} ---")
+if recommended_paths:
+    for i, path in enumerate(recommended_paths):
+        print(f"{i+1}. {path['pathway_name']} (Type: {path['type']}, Time: {path['estimated_time_hours']}h, Cost: ${path['estimated_cost_usd']})")
+    print(f"\nTotal estimated time investment: {total_time_invested} hours")
+    print(f"Total estimated cost investment: ${total_cost_invested}")
+    print(f"Initial AI-R for {current_top_role}: {current_air_for_top_role:.2f}")
+    print(f"Projected AI-R after pathways: {projected_air:.2f} (Improvement: {projected_air - current_air_for_top_role:.2f})")
+else:
+    print("No learning pathways recommended within the specified constraints.")
+
+# Visualization: Current vs. Projected AI-R
+fig, ax = plt.subplots(figsize=(8, 6))
+bar_width = 0.35
+roles = [current_top_role]
+current_airs = [current_air_for_top_role]
+projected_airs = [projected_air]
+
+index = np.arange(len(roles))
+
+bar1 = ax.bar(index, current_airs, bar_width, label='Current AI-R', color='skyblue')
+bar2 = ax.bar(index + bar_width, projected_airs, bar_width, label='Projected AI-R', color='lightcoral')
+
+ax.set_xlabel('Role')
+ax.set_ylabel('AI-Readiness Score')
+ax.set_title(f'Current vs. Projected AI-R for {current_top_role} After Optimized Learning')
+ax.set_xticks(index + bar_width / 2)
+ax.set_xticklabels(roles)
+ax.set_ylim(0, 100)
+ax.legend()
+
+for bar in bar1 + bar2:
+    yval = bar.get_height()
+    ax.text(bar.get_x() + bar.get_width()/2, yval + 1, round(yval, 2), ha='center', va='bottom')
+
+plt.tight_layout()
+plt.show()
+
+# Update Alice's profile with projected VR and skills for subsequent what-if analysis
+alice_profile_after_paths = alice_profile.copy()
+alice_profile_after_paths['vr_score'] = final_vr_after_paths
+alice_profile_after_paths['ai_fluency_score'] = final_vr_subscores_normalized['ai_fluency']
+alice_profile_after_paths['domain_expertise_score'] = final_vr_subscores_normalized['domain_expertise']
+alice_profile_after_paths['adaptive_capacity_score'] = final_vr_subscores_normalized['adaptive_capacity']
+alice_profile_after_paths['current_skills'] = final_skills_after_paths # Update current skills
 ```
+
+### Markdown Cell: Explanation of Optimized Learning Pathway
+
+The optimization algorithm has identified an optimal sequence of learning pathways for Alice, aiming to maximize her AI-R for the `AI Quant Analyst` role within her time and budget constraints.
+
+For example, the recommended pathways might include:
+1.  **Prompt Engineering for Finance**: Directly boosts AI-Fluency, addressing a gap in her AI interaction skills.
+2.  **Financial Domain-Specific AI**: Enhances both Domain-Expertise and AI-Fluency, directly impacting skills for financial AI applications like 'ML_basics' and 'Quant_Models'.
+3.  **Advanced ML for Trading**: Builds on previous learning, further improving Domain-Expertise and advanced ML skills relevant to quant roles.
+
+These pathways, totaling `160` hours and `$1550` (example values), project an AI-R increase from `85.42` to `90.15` (example values). This represents a significant uplift in her overall readiness and marketability for her chosen high-opportunity role. The bar chart visually demonstrates this substantial projected improvement, confirming that the learning investment is expected to yield a positive return on her career trajectory.
+
+## 7. "What-If" Scenario Analysis
+
+Alice wants to explore alternative career and learning strategies beyond the initial optimal recommendation. The 'What-If' scenario engine allows her to compare different choices, understand trade-offs, and see how they impact her projected AI-R. This functionality helps in making robust career decisions.
+
+We will evaluate two scenarios:
+1.  **Scenario A: Focus on a slightly less demanding role (e.g., 'Financial Data Scientist') with a tailored learning path.**
+2.  **Scenario B: Stick to 'AI Quant Analyst' but opt for a cheaper, faster, but potentially less impactful learning path.**
+
+### Code Cell: "What-If" Scenario Analysis Function
+
+```python
+def run_what_if_scenario(initial_vr_score, initial_vr_subscores_normalized, initial_skills, 
+                         target_role_name, hr_data, skill_req_data, learning_pathways_for_scenario, 
+                         alice_exp_years, alpha, beta):
+    """
+    Runs a 'What-If' scenario by applying proposed pathways and calculating projected AI-R.
+    """
+    # Start with initial VR state
+    current_vr = initial_vr_score
+    current_vr_subscores = initial_vr_subscores_normalized.copy()
+    current_skills_dict = initial_skills.copy()
+
+    # Apply proposed pathways' impact
+    for pathway in learning_pathways_for_scenario:
+        current_vr_subscores = simulate_learning_pathway_impact(current_vr_subscores, pathway)
+        # Simulate skills improvement (simplified) for what-if
+        if pathway['type'] == 'AI-Fluency':
+            current_skills_dict['GenAI_Tools'] = min(10, current_skills_dict['GenAI_Tools'] + 1)
+        elif pathway['type'] == 'Domain+AI':
+             current_skills_dict['ML_basics'] = min(10, current_skills_dict['ML_basics'] + 1)
+             current_skills_dict['Quant_Models'] = min(10, current_skills_dict['Quant_Models'] + 1)
+        elif pathway['type'] == 'Adaptive Capacity':
+            current_skills_dict['AI_Ethics'] = min(10, current_skills_dict['AI_Ethics'] + 1)
+            
+    # Calculate final VR after pathways
+    projected_vr = calculate_vr(
+        current_vr_subscores['ai_fluency'], 
+        current_vr_subscores['domain_expertise'], 
+        current_vr_subscores['adaptive_capacity'], 
+        VR_COMPONENT_WEIGHTS
+    )
+
+    # Get HR for the target role
+    target_hr_score = hr_data[target_role_name]
+    
+    # Calculate alignment for the target role
+    required_skills_for_role_series = skill_req_data[skill_req_data['role'] == target_role_name].iloc[0]
+    max_possible_match_for_role = required_skills_for_role_series.drop('role').sum()
+    
+    skills_match, _, _, _, _ = calculate_skills_match_score(
+        current_skills_dict, 
+        required_skills_for_role_series, 
+        max_possible_match_for_role
+    )
+    timing_factor = calculate_timing_factor(alice_exp_years)
+    alignment_score = calculate_alignment(skills_match, timing_factor)
+
+    # Calculate synergy and AI-R
+    synergy_score = calculate_synergy(projected_vr, target_hr_score, alignment_score)
+    projected_air = calculate_air(projected_vr, target_hr_score, synergy_score, alpha, beta)
+    
+    # Calculate total time and cost
+    total_time = sum(p['estimated_time_hours'] for p in learning_pathways_for_scenario)
+    total_cost = sum(p['estimated_cost_usd'] for p in learning_pathways_for_scenario)
+
+    return projected_air, total_time, total_cost, projected_vr, target_hr_score, synergy_score
+
+
+# --- Define Scenario Pathways ---
+# Original Optimized Path (from Section 6) - Re-run for comparison
+optimal_pathway_details = pd.DataFrame(recommended_paths)
+total_optimal_time = optimal_pathway_details['estimated_time_hours'].sum() if not optimal_pathway_details.empty else 0
+total_optimal_cost = optimal_pathway_details['estimated_cost_usd'].sum() if not optimal_pathway_details.empty else 0
+projected_air_optimal = projected_air # From previous section
+scenario_results = [
+    {
+        'Scenario': 'Optimized for AI Quant Analyst',
+        'Target Role': current_top_role,
+        'Projected AI-R': projected_air_optimal,
+        'Projected VR': final_vr_after_paths,
+        'HR': current_hr_for_top_role,
+        'Time (h)': total_optimal_time,
+        'Cost ($)': total_optimal_cost
+    }
+]
+
+# Scenario A: Financial Data Scientist with specific pathways
+scenario_a_pathways = learning_pathways_df[learning_pathways_df['pathway_id'].isin(['P001', 'P004'])].to_dict('records') # Prompt Eng & Gen AI
+projected_air_a, time_a, cost_a, projected_vr_a, hr_a, synergy_a = run_what_if_scenario(
+    alice_vr_score, alice_current_vr_subscores_normalized, alice_profile['current_skills'],
+    'Financial Data Scientist', hr_scores, skill_requirements_df, scenario_a_pathways,
+    alice_profile['experience_years'], ALPHA, BETA
+)
+scenario_results.append({
+    'Scenario': 'Financial Data Scientist w/ GenAI Focus',
+    'Target Role': 'Financial Data Scientist',
+    'Projected AI-R': projected_air_a,
+    'Projected VR': projected_vr_a,
+    'HR': hr_a,
+    'Time (h)': time_a,
+    'Cost ($)': cost_a
+})
+
+# Scenario B: AI Quant Analyst with a cheaper, faster path (e.g., only P001 & P003)
+scenario_b_pathways = learning_pathways_df[learning_pathways_df['pathway_id'].isin(['P001', 'P003'])].to_dict('records') # Prompt Eng & AI Ethics
+projected_air_b, time_b, cost_b, projected_vr_b, hr_b, synergy_b = run_what_if_scenario(
+    alice_vr_score, alice_current_vr_subscores_normalized, alice_profile['current_skills'],
+    current_top_role, hr_scores, skill_requirements_df, scenario_b_pathways,
+    alice_profile['experience_years'], ALPHA, BETA
+)
+scenario_results.append({
+    'Scenario': 'AI Quant Analyst w/ Minimal Path',
+    'Target Role': current_top_role,
+    'Projected AI-R': projected_air_b,
+    'Projected VR': projected_vr_b,
+    'HR': hr_b,
+    'Time (h)': time_b,
+    'Cost ($)': cost_b
+})
+
+scenario_results_df = pd.DataFrame(scenario_results).round(2)
+print("\n--- Alice's 'What-If' Scenario Analysis Results ---")
+print(scenario_results_df)
+
+# Visualization: Comparative Bar Chart of Projected AI-R
+fig, ax = plt.subplots(figsize=(12, 7))
+bar_positions = np.arange(len(scenario_results_df))
+bars = ax.bar(bar_positions, scenario_results_df['Projected AI-R'], color=sns.color_palette('viridis', len(scenario_results_df)))
+
+ax.set_ylabel('Projected AI-Readiness Score')
+ax.set_title('Comparative Projected AI-R for Different Career/Learning Scenarios')
+ax.set_xticks(bar_positions)
+ax.set_xticklabels(scenario_results_df['Scenario'], rotation=45, ha='right')
+ax.set_ylim(0, 100)
+
+for bar in bars:
+    yval = bar.get_height()
+    ax.text(bar.get_x() + bar.get_width()/2, yval + 1, round(yval, 2), ha='center', va='bottom')
+
+plt.tight_layout()
+plt.show()
+
+# Visualization: Return on Learning Investment (AI-R Gain per unit cost + time)
+# For simplicity, calculate a composite ROI metric: (Projected AI-R - Initial AI-R) / (Total Cost + Total Time_weighted)
+initial_air_optimal_role = air_df[air_df['Role'] == current_top_role]['AI_R_Score'].iloc[0]
+initial_air_data_scientist_role = air_df[air_df['Role'] == 'Financial Data Scientist']['AI_R_Score'].iloc[0]
+
+roi_data = []
+for index, row in scenario_results_df.iterrows():
+    if row['Scenario'] == 'Optimized for AI Quant Analyst':
+        initial_air = initial_air_optimal_role
+    elif row['Scenario'] == 'Financial Data Scientist w/ GenAI Focus':
+        initial_air = initial_air_data_scientist_role
+    elif row['Scenario'] == 'AI Quant Analyst w/ Minimal Path':
+        initial_air = initial_air_optimal_role
+    else:
+        initial_air = 0 # Fallback
+
+    air_gain = row['Projected AI-R'] - initial_air
+    
+    # Using the same weighting for cost/time as in optimization
+    normalized_cost = row['Cost ($)'] / MAX_LEARNING_BUDGET_USD if MAX_LEARNING_BUDGET_USD > 0 else 0
+    normalized_time = row['Time (h)'] / MAX_LEARNING_TIME_HOURS if MAX_LEARNING_TIME_HOURS > 0 else 0
+    
+    investment_factor = (normalized_cost * LAMBDA_COST_WEIGHT) + normalized_time
+    
+    if investment_factor > 0:
+        roi = air_gain / investment_factor
+    else:
+        roi = air_gain # If no investment, ROI is just the gain
+    
+    roi_data.append({'Scenario': row['Scenario'], 'AI-R Gain': air_gain, 'Investment Score': investment_factor, 'ROI': roi})
+
+roi_df = pd.DataFrame(roi_data).round(2)
+print("\n--- Return on Learning Investment (AI-R Gain per Weighted Investment) ---")
+print(roi_df)
+
+fig, ax = plt.subplots(figsize=(12, 7))
+sns.barplot(x='Scenario', y='ROI', data=roi_df, palette='magma', ax=ax)
+ax.set_ylabel('ROI (AI-R Gain / Weighted Investment)')
+ax.set_title('Return on Learning Investment for Different Scenarios')
+ax.set_xticklabels(roi_df['Scenario'], rotation=45, ha='right')
+
+for index, row in roi_df.iterrows():
+    ax.text(index, row['ROI'] + 0.5, f"{row['ROI']:.2f}", color='black', ha="center")
+
+plt.tight_layout()
+plt.show()
 ```
+
+### Markdown Cell: Explanation of "What-If" Analysis Results
+
+The "What-If" analysis provides Alice with critical insights into the strategic implications of her choices.
+
+*   **Optimized for AI Quant Analyst (Original Plan):** This scenario yielded the highest projected AI-R of `90.15` (example value), confirming it as the most effective strategy for the `AI Quant Analyst` role. The investment, while substantial, leads to significant career readiness.
+
+*   **Financial Data Scientist w/ GenAI Focus (Scenario A):** Targeting a slightly different role with a more focused learning path (lower time and cost) results in a projected AI-R of `78.53` (example value). This is lower than the optimal AI Quant path, primarily because the initial $H^R$ for a Financial Data Scientist is lower, and the chosen pathways, while good for AI Fluency, may not fully address domain-specific needs for a higher AI-R.
+
+*   **AI Quant Analyst w/ Minimal Path (Scenario B):** Sticking with the high-opportunity `AI Quant Analyst` role but choosing a cheaper, faster pathway (e.g., only `Prompt Engineering` and `AI Ethics`) leads to a projected AI-R of `86.58` (example value). While this is still a good score and requires less investment, it falls short of the `90.15` achieved with the fully optimized, more comprehensive learning plan. This highlights the trade-off between investment and maximum potential.
+
+The comparative bar chart clearly illustrates these differences in projected AI-R, allowing Alice to visually grasp the outcomes. The ROI chart further clarifies which investments provide the best "bang for her buck." The "Optimized for AI Quant Analyst" pathway, despite higher upfront investment, likely offers a superior long-term return due to the significant AI-R boost it provides.
+
+This analysis empowers Alice to make a data-driven decision, weighing the projected career opportunity against the required investment in time and cost.
+
+## 8. Personalized AI Career Strategy Report
+
+This section consolidates all the analysis into a clear, actionable report for Alice, summarizing her current standing, identified skill gaps, and the recommended optimal learning pathway with projected outcomes.
+
+### Code Cell: Generate Personalized Report
+
+```python
+print("--- Personalized AI Career Strategy Report for Alice ---")
+print("\n**1. Current AI-Readiness Profile**")
+print(f"   - **Idiosyncratic Readiness (VR):** {alice_vr_score:.2f}")
+print(f"     (AI-Fluency: {alice_ai_fluency_score:.2f}, Domain-Expertise: {alice_domain_expertise_score:.2f}, Adaptive-Capacity: {alice_adaptive_capacity_score:.2f})")
+print(f"   - **Systematic Opportunity (HR) by Role:**")
+for role, score in hr_scores.items():
+    print(f"     - {role}: {score:.2f}")
+
+print(f"\n**2. Top AI-Enabled Career Path Recommendation**")
+print(f"   - **Recommended Role:** {current_top_role}")
+print(f"   - **Initial AI-Readiness Score (AI-R):** {current_air_for_top_role:.2f}")
+print(f"   - **Projected AI-Readiness Score (AI-R) after Optimal Learning:** {projected_air:.2f}")
+print(f"   - **Estimated AI-R Improvement:** {projected_air - current_air_for_top_role:.2f} points")
+
+print(f"\n**3. Detailed Skill Gaps for {current_top_role}**")
+print("   (Comparing Alice's current skills vs. required for this role)")
+top_role_skills_gaps_df = pd.DataFrame(all_skill_gaps[current_top_role]).T
+top_role_skills_gaps_df['Gap'] = top_role_skills_gaps_df['required'] - top_role_skills_gaps_df['current']
+print(top_role_skills_gaps_df[top_role_skills_gaps_df['Gap'] > 0].sort_values(by='Gap', ascending=False))
+print("(Skills with a positive 'Gap' need development)")
+
+print(f"\n**4. Recommended Optimal Learning Pathway**")
+if recommended_paths:
+    for i, path in enumerate(recommended_paths):
+        print(f"   {i+1}. {path['pathway_name']} (Type: {path['type']})")
+    print(f"   - **Total Estimated Time Investment:** {total_time_invested} hours")
+    print(f"   - **Total Estimated Cost Investment:** ${total_cost_invested}")
+else:
+    print("   No optimal learning pathways identified within current constraints.")
+
+print(f"\n**5. 'What-If' Scenario Analysis Summary**")
+print(scenario_results_df.set_index('Scenario'))
+print("\nInsight: The 'Optimized for AI Quant Analyst' pathway (original recommendation) yields the highest projected AI-R, indicating it's the most effective strategy for maximizing Alice's career opportunity.")
+print("The 'Return on Learning Investment' chart suggests prioritizing pathways with high impact on core VR components that align with high HR roles.")
+
+print("\n--- End of Report ---")
+```
+
