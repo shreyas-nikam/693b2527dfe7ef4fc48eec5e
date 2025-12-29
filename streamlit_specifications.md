@@ -1,621 +1,860 @@
 
-# Streamlit Application Specification: Workforce AI-Readiness & Upskilling Strategizer
+# Streamlit Application Specification: AI-Readiness Career Navigator
 
 ## 1. Application Overview
 
-### Purpose
-The "Workforce AI-Readiness & Upskilling Strategizer" Streamlit application provides AI Workforce leaders and HR executives with a data-driven tool to assess, simulate, and optimize their workforce's preparedness for AI-enabled careers. It implements the AI-Readiness Score (AI-R) framework to quantify individual capabilities and market opportunities, enabling strategic talent development and upskilling initiatives.
+The **AI-Readiness Career Navigator** is a Streamlit application designed to empower financial professionals in navigating the rapidly evolving, AI-driven job market. It provides a data-driven framework to assess an individual's current AI-readiness, identify high-opportunity career paths, pinpoint skill gaps, and optimize personalized learning strategies.
 
-### Target Personas
-*   **AI Workforce Leaders**: To understand the collective AI-readiness, identify strategic skill gaps, and plan large-scale training programs.
-*   **Human Resources Executives**: To manage talent development, design learning pathways, and forecast future workforce needs in the context of AI transformation.
-*   **Economists & Financial Engineers**: To analyze the economic value of AI skills, assess return on investment for training, and model labor market dynamics.
-*   **Data Analysts & Data Scientists**: To drill down into specific metrics, perform ad-hoc analyses, and validate model assumptions.
+**Target Personas:**
+The primary target users are financial professionals, including:
+*   AI Workforce leaders
+*   Human Resources specialists focusing on talent development
+*   Economists analyzing labor market trends
+*   Financial Engineers
+*   Data Analysts and Data Scientists
+*   AI Professionals with a strong mathematical or quantitative focus
 
-### High-Level Story Flow
-The application guides the user through a structured workflow to analyze and act on workforce AI-readiness:
+**High-level Story Flow:**
+The application guides the user, personified by "Alice, a Senior Quantitative Analyst at QuantFinance Innovations," through a structured workflow:
 
-1.  **Framework Introduction**: The user is first introduced to the core AI-Readiness Score (AI-R) framework, its components, and underlying formulas. (Accessible via sidebar for reference).
-2.  **Workforce Dashboard**: The user views an aggregated overview of the workforce's current AI-R scores and broad skill gaps, broken down by departments or job roles. This allows for quick assessment of the current state of the talent pool.
-3.  **What-If Scenario Engine**: The user selects an individual employee and a specific learning pathway, then simulates the immediate impact of completing that pathway (with adjustable completion and mastery rates) on their AI-R score. This helps in evaluating program effectiveness at an individual level.
-4.  **Multi-Step Pathway Optimization**: For more complex transitions or broader skill development, the user can identify an optimal sequence of learning pathways for a selected employee, balancing AI-R improvement with time and cost constraints. This provides a strategic roadmap for talent investment.
-5.  **Strategic Recommendations**: Based on the comprehensive analysis and simulations, the application synthesizes insights and generates strategic recommendations for targeted upskilling initiatives and overall workforce development plans.
+1.  **Introduction:** Alice is introduced to the AI-Readiness Score (AI-R) framework and its importance for career advancement in finance.
+2.  **Profile Assessment:** Alice inputs her professional background (education, experience, skills) and selects potential AI-enabled target roles.
+3.  **Opportunity Evaluation:** The application calculates Alice's **Idiosyncratic Readiness ($V^R$)** based on her individual capabilities and the **Systematic Opportunity ($H^R$)** for her chosen target roles, reflecting market demand. It then synthesizes these into her overall **AI-Readiness Score (AI-R)** and identifies key skill gaps.
+4.  **Learning Pathway Optimization:** Given her AI-R and skill gaps, Alice defines her learning constraints (time, budget). The application recommends an optimal sequence of learning pathways designed to maximize her AI-R gain.
+5.  **"What-If" Scenario Analysis:** Alice explores alternative career paths or learning strategies, comparing their projected AI-R and return on investment to make informed decisions.
+6.  **Personalized Report:** A comprehensive summary of her current standing, recommendations, and projected career trajectory is generated.
+
+This workflow demonstrates how a learner (Alice) applies the AI-R framework to make concrete career development decisions, moving beyond theoretical explanations to practical application.
 
 ## 2. Code Requirements
 
 ### Import Statement
-The Streamlit application (`app.py`) will begin with the following import statements:
 
 ```python
+from source import *
 import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from source import * # Imports all functions and global variables like df_employees, PARAMS etc.
+import ast # For safe evaluation of prerequisites string
 ```
 
 ### `st.session_state` Design
 
-`st.session_state` will be extensively used to maintain the application's state across user interactions and page navigations. All dataframes and parameters derived from `source.py` will be copied into session state upon initial load. This ensures that any modifications or selections made by the user within the app are preserved and don't affect the original imported objects from `source.py`.
+`st.session_state` is extensively used to preserve user inputs, calculated scores, and analysis results across different interactions and simulated "pages" (tabs).
 
-**Initialization (at the beginning of `app.py`, after imports):**
-
-```python
-# Initialize core dataframes and parameters from source.py
-# Using .copy() to ensure modifications within the app do not alter the original imported data
-if 'df_employees' not in st.session_state:
-    st.session_state.df_employees = df_employees.copy()
-if 'df_occupations' not in st.session_state:
-    st.session_state.df_occupations = df_occupations.copy()
-if 'df_pathways' not in st.session_state:
-    st.session_state.df_pathways = df_pathways.copy()
-if 'PARAMS' not in st.session_state:
-    st.session_state.PARAMS = PARAMS.copy()
-
-# Initialize variables for application navigation
-if 'current_page' not in st.session_state:
-    st.session_state.current_page = "Dashboard" # Sets the default landing page
-
-# State for Dashboard page (Workforce Assessment & Skills Gap Analysis)
-if 'report_group_by' not in st.session_state:
-    st.session_state.report_group_by = 'job_role' # Default grouping for reports/heatmaps
-
-# State for What-If Scenario Engine page
-if 'selected_employee_id_whatif' not in st.session_state:
-    st.session_state.selected_employee_id_whatif = st.session_state.df_employees['employee_id'].iloc[0] if not st.session_state.df_employees.empty else "N/A"
-if 'selected_pathway_id_whatif' not in st.session_state:
-    st.session_state.selected_pathway_id_whatif = st.session_state.df_pathways['pathway_id'].iloc[0] if not st.session_state.df_pathways.empty else "N/A"
-if 'completion_rate_whatif' not in st.session_state:
-    st.session_state.completion_rate_whatif = 0.9
-if 'mastery_score_whatif' not in st.session_state:
-    st.session_state.mastery_score_whatif = 0.85
-if 'whatif_results' not in st.session_state:
-    st.session_state.whatif_results = None # Stores {current_ai_r, projected_ai_r, delta_ai_r, pathway_name}
-
-# State for Multi-Step Pathway Optimization page
-if 'selected_employee_id_opt' not in st.session_state:
-    st.session_state.selected_employee_id_opt = st.session_state.df_employees['employee_id'].iloc[0] if not st.session_state.df_employees.empty else "N/A"
-if 'T_max_hours_opt' not in st.session_state:
-    st.session_state.T_max_hours_opt = 300
-if 'cost_weight_lambda_opt' not in st.session_state:
-    st.session_state.cost_weight_lambda_opt = 0.005
-if 'optimization_results' not in st.session_state:
-    st.session_state.optimization_results = None # Stores {current_ai_r, recommended_sequence, projected_final_ai_r, total_cost, total_time_hours, ai_r_improvement}
-
-```
-
-### Application Structure and Flow
-
-The application will feature a prominent sidebar for primary navigation, enabling a multi-page user experience through conditional rendering based on the `st.session_state.current_page` variable.
-
-**Sidebar Navigation:**
+**Initialization:**
+All session state variables are initialized in a function `initialize_session_state()` which is called once at the start of the `app.py` script. Default values for `alice_profile` and `target_roles` are loaded from the global variables defined in `source.py`. Calculated scores and results are initialized to `None` or empty structures (e.g., `{}`, `pd.DataFrame()`). Global model parameters that are exposed for user modification (e.g., `MAX_LEARNING_TIME_HOURS`) are loaded from `source.py`'s global constants as initial values.
 
 ```python
-with st.sidebar:
-    st.title("AI-Readiness Strategizer")
-    st.markdown("---")
-    st.markdown("### Core Workflow")
-    if st.button("Dashboard", key="nav_dashboard"):
-        st.session_state.current_page = "Dashboard"
-    if st.button("What-If Scenario Engine", key="nav_whatif"):
-        st.session_state.current_page = "What-If Scenario"
-    if st.button("Pathway Optimization", key="nav_optimization"):
-        st.session_state.current_page = "Pathway Optimization"
-    if st.button("Strategic Recommendations", key="nav_recommendations"):
-        st.session_state.current_page = "Strategic Recommendations"
-    st.markdown("---")
-    st.markdown("### Framework Details")
-    if st.button("AI-R Overview", key="nav_air_overview"):
-        st.session_state.current_page = "AI-R Overview"
-    if st.button("Systematic Opportunity (HR^R)", key="nav_hrr"):
-        st.session_state.current_page = "Systematic Opportunity (HR^R)"
-    if st.button("Idiosyncratic Readiness (V^R)", key="nav_vr"):
-        st.session_state.current_page = "Idiosyncratic Readiness (V^R)"
-    if st.button("Synergy Function", key="nav_synergy"):
-        st.session_state.current_page = "Synergy Function"
+def initialize_session_state():
+    # User Profile Data (mutable)
+    if 'alice_profile' not in st.session_state:
+        st.session_state['alice_profile'] = {
+            'persona_id': 'Alice',
+            'education_level': 'Master\'s in Finance',
+            'experience_years': 7,
+            'current_skills': { # Skill levels 0-10
+                'Python': 8, 'SQL': 7, 'ML_basics': 6, 'Risk_Analysis': 9,
+                'Financial_Modeling': 8, 'Data_Viz': 7, 'Quant_Models': 6,
+                'AI_Ethics': 5, 'GenAI_Tools': 4, 'Cloud_Platforms': 5
+            },
+            'ai_fluency_subfactors': { # Scores 0-1
+                'prompting': 0.6, 'ai_tools': 0.5, 'understanding': 0.6, 'data_literacy': 0.7,
+                'ai_augmented_productivity': 0.7, 'critical_ai_judgment': 0.65, 'appropriate_trust_decisions': 0.75,
+                'proficiency_gain': 0.10, 'hours_invested': 50
+            },
+            'domain_expertise_subfactors': { # Scores 0-1
+                'portfolio': 0.7, 'recognition': 0.6, 'credentials': 0.8
+            },
+            'adaptive_capacity_subfactors': { # Scores 0-1
+                'cognitive_flexibility': 0.75, 'social_emotional_intelligence': 0.8, 'strategic_career_management': 0.7
+            }
+        }
+    if 'target_roles' not in st.session_state:
+        st.session_state['target_roles'] = ['AI Quant Analyst', 'ML Engineer in Trading', 'AI Risk Analyst', 'Financial Data Scientist']
+    
+    # Core AI-R Calculation Results
+    if 'alice_ai_fluency_score' not in st.session_state: st.session_state['alice_ai_fluency_score'] = None
+    if 'alice_domain_expertise_score' not in st.session_state: st.session_state['alice_domain_expertise_score'] = None
+    if 'alice_adaptive_capacity_score' not in st.session_state: st.session_state['alice_adaptive_capacity_score'] = None
+    if 'alice_vr_score' not in st.session_state: st.session_state['alice_vr_score'] = None
+    if 'hr_scores' not in st.session_state: st.session_state['hr_scores'] = {} # dict: role -> HR_Score
+    if 'air_df' not in st.session_state: st.session_state['air_df'] = pd.DataFrame() # DataFrame with all AI-R components
+    if 'all_skill_gaps' not in st.session_state: st.session_state['all_skill_gaps'] = {} # dict: role -> skill_gaps_dict
+    if 'top_role' not in st.session_state: st.session_state['top_role'] = {} # Series/dict of the max AI-R role
+
+    # Optimization Parameters (user-adjustable with defaults from source.py globals)
+    if 'max_learning_time_hours' not in st.session_state: st.session_state['max_learning_time_hours'] = MAX_LEARNING_TIME_HOURS
+    if 'max_learning_budget_usd' not in st.session_state: st.session_state['max_learning_budget_usd'] = MAX_LEARNING_BUDGET_USD
+    if 'lambda_cost_weight' not in st.session_state: st.session_state['lambda_cost_weight'] = LAMBDA_COST_WEIGHT
+
+    # Optimization Results
+    if 'recommended_paths' not in st.session_state: st.session_state['recommended_paths'] = []
+    if 'total_time_invested' not in st.session_state: st.session_state['total_time_invested'] = 0
+    if 'total_cost_invested' not in st.session_state: st.session_state['total_cost_invested'] = 0
+    if 'projected_air' not in st.session_state: st.session_state['projected_air'] = None # Projected AI-R for optimal path
+    if 'final_vr_after_paths' not in st.session_state: st.session_state['final_vr_after_paths'] = None
+    if 'final_vr_subscores_normalized' not in st.session_state: st.session_state['final_vr_subscores_normalized'] = {}
+    if 'final_skills_after_paths' not in st.session_state: st.session_state['final_skills_after_paths'] = {}
+
+    # Scenario Analysis Results
+    if 'scenario_results_df' not in st.session_state: st.session_state['scenario_results_df'] = pd.DataFrame()
+    if 'roi_df' not in st.session_state: st.session_state['roi_df'] = pd.DataFrame()
+
+    # Loaded DataFrames (read once)
+    if 'idiosyncratic_df' not in st.session_state:
+        create_simulated_data() # Ensure data files exist before reading
+        st.session_state['idiosyncratic_df'] = pd.read_csv('idiosyncratic_data.csv')
+        st.session_state['systematic_df'] = pd.read_csv('systematic_opportunity_data.csv')
+        st.session_state['job_postings_df'] = pd.read_csv('job_postings_data.csv')
+        st.session_state['regional_demand_df'] = pd.read_csv('regional_demand_data.csv')
+        st.session_state['skill_requirements_df'] = pd.read_csv('skill_requirements.csv')
+        st.session_state['learning_pathways_df'] = pd.read_csv('learning_pathways.csv')
 ```
 
-**Main Content Area (Conditional Rendering Logic):**
+**Updates:**
+*   User inputs in the "Profile & Goals" tab directly update `st.session_state['alice_profile']` and `st.session_state['target_roles']`.
+*   Calculations in "Opportunity Evaluation" update `st.session_state['alice_ai_fluency_score']`, `st.session_state['alice_domain_expertise_score']`, `st.session_state['alice_adaptive_capacity_score']`, `st.session_state['alice_vr_score']`, `st.session_state['hr_scores']`, `st.session_state['air_df']`, `st.session_state['all_skill_gaps']`, `st.session_state['top_role']`.
+*   User inputs in "Learning Optimization" update `st.session_state['max_learning_time_hours']`, `st.session_state['max_learning_budget_usd']`, `st.session_state['lambda_cost_weight']`.
+*   Optimization logic updates `st.session_state['recommended_paths']`, `st.session_state['total_time_invested']`, `st.session_state['total_cost_invested']`, `st.session_state['projected_air']`, `st.session_state['final_vr_after_paths']`, `st.session_state['final_vr_subscores_normalized']`, `st.session_state['final_skills_after_paths']`.
+*   Scenario analysis updates `st.session_state['scenario_results_df']` and `st.session_state['roi_df']`.
+
+**Reads:**
+*   All subsequent calculation steps read the latest state from `st.session_state`. For instance, AI-R calculation reads `st.session_state['alice_vr_score']` and `st.session_state['hr_scores']`. The optimization functions read the current profile, VR, HR, and skill gaps from `st.session_state`.
+*   The "Summary Report" reads all final calculated values and recommendations from `st.session_state`.
+
+### UI Interactions and `source.py` Function Calls
+
+**Global Constants (from `source.py`):**
+*   `ALPHA`, `BETA`, `VR_W1_AI_FLUENCY`, `VR_W2_DOMAIN_EXPERTISE`, `VR_W3_ADAPTIVE_CAPACITY`, `AI_FLUENCY_THETA_WEIGHTS`, `GAMMA_EXPERIENCE_DECAY`, `HR_W1_AI_ENHANCEMENT`, `HR_W2_JOB_GROWTH`, `HR_W3_WAGE_PREMIUM`, `HR_W4_ENTRY_ACCESSIBILITY`, `LAMBDA_GROWTH_MULTIPLIER`, `GAMMA_REMOTE_WORK`, `MAX_POSSIBLE_SKILL_MATCH`, `LAMBDA_COST_WEIGHT`, `MAX_LEARNING_TIME_HOURS`, `MAX_LEARNING_BUDGET_USD`. These are loaded upon `from source import *` and are directly used by the functions or provided as initial values for user-adjustable parameters in `st.session_state`.
+
+**Data Loading (`create_simulated_data()` and `pd.read_csv` calls):**
+*   **Trigger:** Implicitly called once during `initialize_session_state()`.
+*   **Functions:** `create_simulated_data()` to ensure CSVs exist. `pd.read_csv()` to load data into session state.
+
+**1. Profile & Goals Tab (User Input & Initial VR Calculation):**
+*   **Widgets:** Various `st.text_input`, `st.number_input`, `st.selectbox`, `st.slider`, `st.multiselect` to update `st.session_state['alice_profile']` and `st.session_state['target_roles']`.
+*   **Button:** "Calculate Initial Readiness & Opportunity".
+    *   **Functions:**
+        *   `calculate_ai_fluency(subfactors, AI_FLUENCY_THETA_WEIGHTS)`
+        *   `calculate_domain_expertise(education_level, experience_years, specialization_depth_scores, GAMMA_EXPERIENCE_DECAY)`
+        *   `calculate_adaptive_capacity(subfactors)`
+        *   `calculate_vr(ai_fluency, domain_expertise, adaptive_capacity, VR_COMPONENT_WEIGHTS)`
+        *   These updates: `st.session_state['alice_ai_fluency_score']`, `st.session_state['alice_domain_expertise_score']`, `st.session_state['alice_adaptive_capacity_score']`, `st.session_state['alice_vr_score']`.
+
+**2. Opportunity Evaluation Tab (HR & AI-R Calculation):**
+*   **Trigger:** Automatically runs when tab is active if profile data exists (or can be triggered by a "Recalculate" button if parameters change).
+*   **Functions:**
+    *   For each role in `st.session_state['target_roles']`:
+        *   `normalize_growth(growth_rate)`
+        *   `calculate_wage_premium(ai_skilled_wage, median_wage)`
+        *   `calculate_entry_accessibility(education_years_required, experience_years_required)`
+        *   `calculate_hbase(ai_enhancement, growth_normalized, wage_premium, entry_accessibility, HBASE_WEIGHTS)`
+        *   `calculate_mgrowth(job_postings_t, job_postings_t_minus_1, LAMBDA_GROWTH_MULTIPLIER)`
+        *   `calculate_mregional(local_demand, national_avg_demand, remote_work_factor, GAMMA_REMOTE_WORK)`
+        *   `calculate_hr(hbase_score, mgrowth_score, mregional_score)`
+        *   Updates: `st.session_state['hr_scores']`.
+    *   For each role in `st.session_state['target_roles']`:
+        *   `calculate_skills_match_score(current_skills_dict, required_skills_series, max_possible_match_val)`
+        *   `calculate_timing_factor(years_experience)`
+        *   `calculate_alignment(skills_match_score, timing_factor)`
+        *   `calculate_synergy(vr_score, hr_score, alignment_score)`
+        *   `calculate_air(vr_score, hr_score, synergy_score, ALPHA, BETA)`
+        *   Updates: `st.session_state['air_df']`, `st.session_state['all_skill_gaps']`, `st.session_state['top_role']`.
+*   **Visualizations:** `st.pyplot(fig)` for bar chart of AI-R, VR, HR, and radar chart of skill gaps.
+
+**3. Learning Optimization Tab:**
+*   **Widgets:** `st.number_input` for `st.session_state['max_learning_time_hours']`, `st.session_state['max_learning_budget_usd']`, `st.session_state['lambda_cost_weight']`.
+*   **Button:** "Optimize Learning Pathway".
+    *   **Functions:**
+        *   `optimize_learning_pathways(current_air_score, current_vr_score, current_vr_subscores, target_hr_score, learning_pathways_df, max_time, max_cost, ALPHA, BETA, lambda_cost_weight, alice_exp_years, alice_current_skills_dict)`
+        *   Updates: `st.session_state['recommended_paths']`, `st.session_state['total_time_invested']`, `st.session_state['total_cost_invested']`, `st.session_state['projected_air']`, `st.session_state['final_vr_after_paths']`, `st.session_state['final_vr_subscores_normalized']`, `st.session_state['final_skills_after_paths']`.
+*   **Visualizations:** `st.pyplot(fig)` for bar chart comparing current and projected AI-R.
+
+**4. "What-If" Scenario Analysis Tab:**
+*   **Widgets:** `st.selectbox` for target role, `st.multiselect` to select learning pathways for custom scenarios.
+*   **Button:** "Run Scenario Analysis".
+    *   **Functions:**
+        *   `run_what_if_scenario(initial_vr_score, initial_vr_subscores_normalized, initial_skills, target_role_name, hr_data, skill_req_data, learning_pathways_for_scenario, alice_exp_years, ALPHA, BETA)`
+        *   Updates: `st.session_state['scenario_results_df']`, `st.session_state['roi_df']`.
+*   **Visualizations:** `st.pyplot(fig)` for comparative AI-R bar chart and ROI bar chart.
+
+### Markdown Content
+
+The markdown for each section (tab) will be defined below, adhering to the strict formula handling rules.
+
+---
+
+## Streamlit Application Blueprint (`app.py`)
 
 ```python
-if st.session_state.current_page == "Dashboard":
-    # Dashboard Page Content
-elif st.session_state.current_page == "What-If Scenario":
-    # What-If Scenario Page Content
-elif st.session_state.current_page == "Pathway Optimization":
-    # Pathway Optimization Page Content
-elif st.session_state.current_page == "Strategic Recommendations":
-    # Strategic Recommendations Page Content
-elif st.session_state.current_page == "AI-R Overview":
-    # AI-R Overview Page Content
-elif st.session_state.current_page == "Systematic Opportunity (HR^R)":
-    # Systematic Opportunity (HR^R) Page Content
-elif st.session_state.current_page == "Idiosyncratic Readiness (V^R)":
-    # Idiosyncratic Readiness (V^R) Page Content
-elif st.session_state.current_page == "Synergy Function":
-    # Synergy Function Page Content
-```
+# app.py
+import streamlit as st
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import ast # For safe evaluation of prerequisites string in optimize_learning_pathways
 
----
+# Import all functions and global variables from source.py
+from source import *
 
-#### **Page: Dashboard**
+# Set plot style globally for the app
+sns.set_theme(style="whitegrid")
+plt.rcParams['figure.figsize'] = (10, 6)
+plt.rcParams['font.size'] = 12
 
-*   **Application Flow & Persona Focus:** This page serves as the primary entry point for AI Workforce leaders and HR executives. It allows them to quickly grasp the collective AI-readiness of their workforce, identify high-level strengths and weaknesses across departments and job roles, and pinpoint areas that may require strategic attention.
-*   **Markdown:**
-    ```python
-    st.title("Workforce AI-Readiness Dashboard")
-    st.markdown(f"Gain a high-level overview of your workforce's AI-Readiness, broken down by key organizational groups.")
-    st.markdown(f"---")
-    st.header("Aggregated AI-Readiness Report")
-    st.markdown(f"The 'Workforce AI-Readiness Report' summarizes the aggregated AI-R scores, providing a high-level overview of the organization's AI-readiness across different segments.")
-    ```
-*   **Streamlit Widgets & Interaction:**
-    *   **Group By Selector:**
-        ```python
-        st.session_state.report_group_by = st.selectbox(
-            "Group AI-Readiness Report by:",
-            ['job_role', 'department'],
-            index=0 if st.session_state.report_group_by == 'job_role' else 1,
-            key='dashboard_group_by_select',
-            on_change=lambda: st.session_state.update({'report_group_by': st.session_state.dashboard_group_by_select})
-        )
-        ```
-    *   **Summary Table Display:**
-        ```python
-        ai_r_summary_report = generate_ai_r_report_summary(st.session_state.df_employees)
-        st.dataframe(ai_r_summary_report)
-        st.markdown(f"Average AI-R score for the entire workforce: **{st.session_state.df_employees['current_ai_r_score'].mean():.2f}**")
-        ```
-    *   **Skills Gap Heatmap:**
-        ```python
-        st.header("Skills Gap Analysis Heatmap")
-        st.markdown(f"This heatmap visualizes the average scores for Idiosyncratic Readiness ($V^R$) sub-components (AI-Fluency, Domain-Expertise, Adaptive-Capacity) across different employee groups.")
-        st.markdown(f"The heatmap offers a granular view, clearly highlighting which $V^R$ sub-components are strong or weak within specific job roles/departments, thereby pinpointing areas for targeted upskilling efforts.")
-        
-        # Adaptation: plot_skills_gap_heatmap needs to return a matplotlib figure.
-        # Original: plt.show() -> Modified: return plt.gcf()
-        fig_heatmap, ax_heatmap = plt.subplots(figsize=(10, 6))
-        vr_sub_components = ['ai_fluency_score', 'domain_expertise_score', 'adaptive_capacity_score']
-        heatmap_data = st.session_state.df_employees.groupby(st.session_state.report_group_by)[vr_sub_components].mean()
-        sns.heatmap(heatmap_data, annot=True, cmap='viridis', fmt=".1f", linewidths=.5, ax=ax_heatmap)
-        ax_heatmap.set_title(f'Average $V^R$ Sub-Component Scores by {st.session_state.report_group_by}')
-        ax_heatmap.set_ylabel(st.session_state.report_group_by)
-        ax_heatmap.set_xlabel('$V^R$ Sub-Component')
-        plt.xticks(rotation=45, ha='right')
-        st.pyplot(fig_heatmap)
-        ```
-*   **Function Invocation Points:**
-    *   `generate_ai_r_report_summary(df_employees_data)`: Called to generate the summary table for aggregated AI-R scores. (Reads `st.session_state.df_employees`).
-    *   `plot_skills_gap_heatmap(df_employees_data, group_by_column)`: (Adapted from `source.py` to return a `matplotlib` figure for `st.pyplot`) Called to generate the skills gap heatmap. (Reads `st.session_state.df_employees`).
-*   **`st.session_state` Usage:**
-    *   **Reads**: `st.session_state.df_employees`, `st.session_state.report_group_by`.
-    *   **Updates**: `st.session_state.report_group_by` (via selectbox interaction).
+# Initialize session state variables
+def initialize_session_state():
+    # User Profile Data (mutable)
+    if 'alice_profile' not in st.session_state:
+        st.session_state['alice_profile'] = {
+            'persona_id': 'Alice',
+            'education_level': 'Master\'s in Finance',
+            'experience_years': 7,
+            'current_skills': { # Skill levels 0-10
+                'Python': 8, 'SQL': 7, 'ML_basics': 6, 'Risk_Analysis': 9,
+                'Financial_Modeling': 8, 'Data_Viz': 7, 'Quant_Models': 6,
+                'AI_Ethics': 5, 'GenAI_Tools': 4, 'Cloud_Platforms': 5
+            },
+            'ai_fluency_subfactors': { # Scores 0-1
+                'prompting': 0.6, 'ai_tools': 0.5, 'understanding': 0.6, 'data_literacy': 0.7,
+                'ai_augmented_productivity': 0.7, 'critical_ai_judgment': 0.65, 'appropriate_trust_decisions': 0.75,
+                'proficiency_gain': 0.10, 'hours_invested': 50
+            },
+            'domain_expertise_subfactors': { # Scores 0-1
+                'portfolio': 0.7, 'recognition': 0.6, 'credentials': 0.8
+            },
+            'adaptive_capacity_subfactors': { # Scores 0-1
+                'cognitive_flexibility': 0.75, 'social_emotional_intelligence': 0.8, 'strategic_career_management': 0.7
+            }
+        }
+    if 'target_roles' not in st.session_state:
+        st.session_state['target_roles'] = ['AI Quant Analyst', 'ML Engineer in Trading', 'AI Risk Analyst', 'Financial Data Scientist']
+    
+    # Core AI-R Calculation Results
+    if 'alice_ai_fluency_score' not in st.session_state: st.session_state['alice_ai_fluency_score'] = None
+    if 'alice_domain_expertise_score' not in st.session_state: st.session_state['alice_domain_expertise_score'] = None
+    if 'alice_adaptive_capacity_score' not in st.session_state: st.session_state['alice_adaptive_capacity_score'] = None
+    if 'alice_vr_score' not in st.session_state: st.session_state['alice_vr_score'] = None
+    if 'hr_scores' not in st.session_state: st.session_state['hr_scores'] = {} # dict: role -> HR_Score
+    if 'air_df' not in st.session_state: st.session_state['air_df'] = pd.DataFrame() # DataFrame with all AI-R components
+    if 'all_skill_gaps' not in st.session_state: st.session_state['all_skill_gaps'] = {} # dict: role -> skill_gaps_dict
+    if 'top_role' not in st.session_state: st.session_state['top_role'] = {} # Series/dict of the max AI-R role
 
----
+    # Optimization Parameters (user-adjustable with defaults from source.py globals)
+    if 'max_learning_time_hours' not in st.session_state: st.session_state['max_learning_time_hours'] = MAX_LEARNING_TIME_HOURS
+    if 'max_learning_budget_usd' not in st.session_state: st.session_state['max_learning_budget_usd'] = MAX_LEARNING_BUDGET_USD
+    if 'lambda_cost_weight' not in st.session_state: st.session_state['lambda_cost_weight'] = LAMBDA_COST_WEIGHT
 
-#### **Page: What-If Scenario Engine**
+    # Optimization Results
+    if 'recommended_paths' not in st.session_state: st.session_state['recommended_paths'] = []
+    if 'total_time_invested' not in st.session_state: st.session_state['total_time_invested'] = 0
+    if 'total_cost_invested' not in st.session_state: st.session_state['total_cost_invested'] = 0
+    if 'projected_air' not in st.session_state: st.session_state['projected_air'] = None # Projected AI-R for optimal path
+    if 'initial_air_optimal_role' not in st.session_state: st.session_state['initial_air_optimal_role'] = None # Initial AI-R of the optimal role before optimization
+    if 'final_vr_after_paths' not in st.session_state: st.session_state['final_vr_after_paths'] = None
+    if 'final_vr_subscores_normalized' not in st.session_state: st.session_state['final_vr_subscores_normalized'] = {}
+    if 'final_skills_after_paths' not in st.session_state: st.session_state['final_skills_after_paths'] = {}
 
-*   **Application Flow & Persona Focus:** This page is designed for Human Resources executives and AI Workforce leaders to simulate the potential impact of specific training programs on individual employees. By adjusting completion rates and mastery scores, they can assess the effectiveness of learning pathways and make data-driven decisions about talent investment.
-*   **Markdown:**
-    ```python
-    st.title("What-If Scenario Engine")
-    st.markdown(f"Simulate the impact of learning pathways on individual employee AI-Readiness scores.")
-    st.markdown(f"---")
-    st.header("Simulating Learning Pathway Impact")
-    st.markdown(f"The 'What-If' scenario engine allows HR leaders to simulate the impact of various training programs and learning pathways on an individual's AI-Readiness. This dynamic tool helps assess potential improvements to $V^R$ sub-components and the overall AI-R score.")
-    st.markdown(f"The update formula for AI-R is conceptually:")
-    st.markdown(r"$$AI-R_{i,t+1} = AI-R_{i,t} + \sum_{p \in P} \Delta_p \cdot Completion_p \cdot Mastery_p$$")
-    st.markdown(f"where $\\Delta_p$ is the pre-calibrated impact coefficient for pathway $p$ (from `df_pathways`), $Completion_p \\in [0,1]$ is the fraction completed, and $Mastery_p \\in [0,1]$ is the assessment performance score.")
-    st.markdown(f"The pathway impact ($\\Delta_p$) will directly affect the AI-Fluency, Domain-Expertise, or Adaptive-Capacity scores, which then propagate to $V^R$ and subsequently AI-R.")
-    st.markdown(f"This simulation demonstrates the predictive power of the framework, allowing leaders to evaluate the effectiveness of different training programs. By adjusting completion and mastery rates, they can gain insights into the potential ROI of various learning investments and tailor programs to maximize workforce AI-readiness.")
-    ```
-*   **Streamlit Widgets & Interaction:**
-    *   **Employee Selector:**
-        ```python
-        employee_ids = st.session_state.df_employees['employee_id'].tolist()
-        selected_employee_id = st.selectbox(
-            "Select Employee:",
-            employee_ids,
-            index=employee_ids.index(st.session_state.selected_employee_id_whatif) if st.session_state.selected_employee_id_whatif in employee_ids else 0,
-            key='whatif_employee_select'
-        )
-        st.session_state.selected_employee_id_whatif = selected_employee_id
-        ```
-    *   **Pathway Selector:**
-        ```python
-        pathway_names = st.session_state.df_pathways['pathway_name'].tolist()
-        pathway_map = st.session_state.df_pathways.set_index('pathway_name')['pathway_id'].to_dict()
-        default_pathway_name_whatif = st.session_state.df_pathways[st.session_state.df_pathways['pathway_id'] == st.session_state.selected_pathway_id_whatif]['pathway_name'].iloc[0] if st.session_state.selected_pathway_id_whatif != "N/A" and st.session_state.selected_pathway_id_whatif in pathway_map.values() else pathway_names[0]
-        selected_pathway_name = st.selectbox(
-            "Select Learning Pathway:",
-            pathway_names,
-            index=pathway_names.index(default_pathway_name_whatif),
-            key='whatif_pathway_select'
-        )
-        selected_pathway_id = pathway_map.get(selected_pathway_name, "N/A")
-        st.session_state.selected_pathway_id_whatif = selected_pathway_id
-        ```
-    *   **Completion Rate Slider:**
-        ```python
-        completion_rate = st.slider("Completion Rate", 0.0, 1.0, st.session_state.completion_rate_whatif, 0.05, key='whatif_completion_rate')
-        st.session_state.completion_rate_whatif = completion_rate
-        ```
-    *   **Mastery Score Slider:**
-        ```python
-        mastery_score = st.slider("Mastery Score", 0.0, 1.0, st.session_state.mastery_score_whatif, 0.05, key='whatif_mastery_score')
-        st.session_state.mastery_score_whatif = mastery_score
-        ```
-    *   **Simulate Button:**
-        ```python
-        if st.button("Simulate Pathway Impact"):
-            if st.session_state.selected_employee_id_whatif != "N/A" and st.session_state.selected_pathway_id_whatif != "N/A":
-                current_ai_r_val = st.session_state.df_employees[st.session_state.df_employees['employee_id'] == st.session_state.selected_employee_id_whatif]['current_ai_r_score'].iloc[0]
-                projected_ai_r, delta_ai_r, pathway_name_res = simulate_pathway_impact(
-                    st.session_state.selected_employee_id_whatif,
-                    st.session_state.selected_pathway_id_whatif,
-                    st.session_state.completion_rate_whatif,
-                    st.session_state.mastery_score_whatif,
-                    st.session_state.df_employees,
-                    st.session_state.df_occupations,
-                    st.session_state.df_pathways,
-                    st.session_state.PARAMS
-                )
-                st.session_state.whatif_results = {
-                    "current_ai_r": current_ai_r_val,
-                    "projected_ai_r": projected_ai_r,
-                    "delta_ai_r": delta_ai_r,
-                    "pathway_name": pathway_name_res,
-                    "selected_employee_id": st.session_state.selected_employee_id_whatif # Store selected employee ID for results display
-                }
-            else:
-                st.warning("Please ensure an employee and a pathway are selected for simulation.")
-        ```
-    *   **Display Results (if simulation completed):**
-        ```python
-        if st.session_state.whatif_results and st.session_state.whatif_results["selected_employee_id"] == st.session_state.selected_employee_id_whatif:
-            res = st.session_state.whatif_results
-            st.subheader("Simulation Results:")
-            st.markdown(f"Employee ID: **{res['selected_employee_id']}**")
-            st.markdown(f"Current AI-R Score: **{res['current_ai_r']:.2f}**")
-            st.markdown(f"Chosen Pathway: **{res['pathway_name']}**")
-            st.markdown(f"Projected AI-R Score: **{res['projected_ai_r']:.2f}**")
-            st.markdown(f"Change in AI-R ($\\Delta$AI-R): **{res['delta_ai_r']:.2f}**")
+    # Scenario Analysis Results
+    if 'scenario_results_df' not in st.session_state: st.session_state['scenario_results_df'] = pd.DataFrame()
+    if 'roi_df' not in st.session_state: st.session_state['roi_df'] = pd.DataFrame()
 
-            # Adaptation: plot_current_vs_projected_ai_r needs to return a matplotlib figure.
-            # Original: plt.show() -> Modified: return plt.gcf()
-            fig_whatif, ax_whatif = plt.subplots(figsize=(8, 5))
-            plot_current_vs_projected_ai_r(res['current_ai_r'], [res['projected_ai_r']], [res['pathway_name']])
-            st.pyplot(fig_whatif)
-        ```
-*   **Function Invocation Points:**
-    *   `simulate_pathway_impact(...)`: Main logic for calculating projected AI-R. (Reads `st.session_state.df_employees`, `st.session_state.df_occupations`, `st.session_state.df_pathways`, `st.session_state.PARAMS`).
-    *   `plot_current_vs_projected_ai_r(...)`: (Adapted from `source.py` to return a `matplotlib` figure for `st.pyplot`) Visualizes the current vs. projected AI-R scores.
-*   **`st.session_state` Usage:**
-    *   **Reads**: `st.session_state.df_employees`, `st.session_state.df_occupations`, `st.session_state.df_pathways`, `st.session_state.PARAMS`, `st.session_state.selected_employee_id_whatif`, `st.session_state.selected_pathway_id_whatif`, `st.session_state.completion_rate_whatif`, `st.session_state.mastery_score_whatif`, `st.session_state.whatif_results`.
-    *   **Updates**: `st.session_state.selected_employee_id_whatif`, `st.session_state.selected_pathway_id_whatif`, `st.session_state.completion_rate_whatif`, `st.session_state.mastery_score_whatif`, `st.session_state.whatif_results`.
+    # Loaded DataFrames (read once)
+    if 'idiosyncratic_df' not in st.session_state:
+        create_simulated_data() # Ensure data files exist before reading
+        st.session_state['idiosyncratic_df'] = pd.read_csv('idiosyncratic_data.csv')
+        st.session_state['systematic_df'] = pd.read_csv('systematic_opportunity_data.csv')
+        st.session_state['job_postings_df'] = pd.read_csv('job_postings_data.csv')
+        st.session_state['regional_demand_df'] = pd.read_csv('regional_demand_data.csv')
+        st.session_state['skill_requirements_df'] = pd.read_csv('skill_requirements.csv')
+        st.session_state['learning_pathways_df'] = pd.read_csv('learning_pathways.csv')
 
----
+# Call to initialize session state
+initialize_session_state()
 
-#### **Page: Multi-Step Pathway Optimization**
+st.set_page_config(layout="wide", page_title="AI-Readiness Career Navigator")
 
-*   **Application Flow & Persona Focus:** This page empowers AI Workforce leaders and Data Analysts to identify an optimal sequence of learning pathways for a selected employee. It's crucial for designing strategic roadmaps for talent development, especially for complex skill transitions, by balancing AI-R improvement with budget and time constraints.
-*   **Markdown:**
-    ```python
-    st.title("Multi-Step Pathway Optimization")
-    st.markdown(f"Generate an optimized sequence of learning pathways to maximize AI-Readiness within defined constraints.")
-    st.markdown(f"---")
-    st.header("Multi-Step Pathway Optimization")
-    st.markdown(f"For complex skill transitions or broader workforce development, identifying an optimal sequence of learning pathways is crucial. This involves balancing AI-R improvement with constraints like total cost and time. The multi-step pathway optimization problem can be formulated as:")
-    st.markdown(r"$$\max_{P_1,...,P_K} AI-R(P_1,..., P_K) - \lambda_{\text{cost}} \cdot \sum_{k=1}^K Cost(P_k)$$")
-    st.markdown(f"subject to:")
-    st.markdown(r"$$ \sum_{k=1}^K Time(P_k) \leq T_{\text{max}} $$")
-    st.markdown(r"$$ P_k \in P_{\text{feasible}} $$")
-    st.markdown(r"$$ Prerequisites(P_k) \subseteq \{P_1,...,P_{k-1}\} $$")
-    st.markdown(f"For this application, we implement a simplified greedy optimization strategy to identify a sequence of pathways that maximizes AI-R improvement within a given time budget, considering the cost.")
-    st.markdown(f"The pathway optimization function provides a strategic roadmap for investing in talent development. By considering multiple pathways, their costs, and time commitments, organizations can make data-driven decisions to maximize the AI-Readiness of their workforce efficiently, identifying high-ROI learning initiatives.")
-    ```
-*   **Streamlit Widgets & Interaction:**
-    *   **Employee Selector:**
-        ```python
-        employee_ids_opt = st.session_state.df_employees['employee_id'].tolist()
-        selected_employee_id_opt = st.selectbox(
-            "Select Employee for Optimization:",
-            employee_ids_opt,
-            index=employee_ids_opt.index(st.session_state.selected_employee_id_opt) if st.session_state.selected_employee_id_opt in employee_ids_opt else 0,
-            key='opt_employee_select'
-        )
-        st.session_state.selected_employee_id_opt = selected_employee_id_opt
-        ```
-    *   **Max Time Hours Slider:**
-        ```python
-        T_max_hours = st.slider("Maximum Time (hours)", 50, 500, st.session_state.T_max_hours_opt, 10, key='opt_max_time')
-        st.session_state.T_max_hours_opt = T_max_hours
-        ```
-    *   **Cost Weight Lambda Slider:**
-        ```python
-        cost_weight_lambda = st.slider("Cost Weight ($\\lambda_{\\text{cost}}$)", 0.001, 0.01, st.session_state.cost_weight_lambda_opt, 0.001, key='opt_cost_weight', format="%.3f")
-        st.session_state.cost_weight_lambda_opt = cost_weight_lambda
-        ```
-    *   **Optimize Button:**
-        ```python
-        if st.button("Optimize Pathways"):
-            if st.session_state.selected_employee_id_opt != "N/A":
-                current_ai_r_opt_val = st.session_state.df_employees[st.session_state.df_employees['employee_id'] == st.session_state.selected_employee_id_opt]['current_ai_r_score'].iloc[0]
-                optimization_results = optimize_pathway_sequence(
-                    st.session_state.selected_employee_id_opt,
-                    current_ai_r_opt_val,
-                    st.session_state.df_pathways,
-                    st.session_state.T_max_hours_opt,
-                    st.session_state.cost_weight_lambda_opt,
-                    st.session_state.df_employees,
-                    st.session_state.df_occupations, # Not directly used in this `optimize_pathway_sequence` but kept for consistency with source.py signature
-                    st.session_state.PARAMS
-                )
-                st.session_state.optimization_results = {
-                    "current_ai_r": current_ai_r_opt_val,
-                    "selected_employee_id": st.session_state.selected_employee_id_opt, # Store selected employee ID for results display
-                    **optimization_results # Unpack results from the function
-                }
-            else:
-                st.warning("Please select an employee for optimization.")
-        ```
-    *   **Display Results (if optimization completed):**
-        ```python
-        if st.session_state.optimization_results and st.session_state.optimization_results["selected_employee_id"] == st.session_state.selected_employee_id_opt:
-            opt_res = st.session_state.optimization_results
-            st.subheader("Optimization Results:")
-            st.markdown(f"Employee ID: **{opt_res['selected_employee_id']}**")
-            st.markdown(f"Current AI-R Score: **{opt_res['current_ai_r']:.2f}**")
-            st.markdown(f"Recommended Pathway Sequence: **{', '.join(opt_res['recommended_sequence']) if opt_res['recommended_sequence'] else 'No pathways recommended within constraints'}**")
-            st.markdown(f"Projected Final AI-R: **{opt_res['projected_final_ai_r']:.2f}**")
-            st.markdown(f"Total Cost: **${opt_res['total_cost']:.2f}**")
-            st.markdown(f"Total Time (hours): **{opt_res['total_time_hours']:.2f}**")
-            st.markdown(f"AI-R Improvement: **{opt_res['ai_r_improvement']:.2f}**")
+st.title("AI-Readiness Career Navigator")
+st.markdown("---")
 
-            # Adaptation: plot_current_vs_projected_ai_r needs to return a matplotlib figure.
-            # Original: plt.show() -> Modified: return plt.gcf()
-            fig_opt, ax_opt = plt.subplots(figsize=(8, 5))
-            plot_current_vs_projected_ai_r(
-                opt_res['current_ai_r'],
-                [opt_res['projected_final_ai_r']],
-                ['Optimized Pathway Sequence']
-            )
-            st.pyplot(fig_opt)
-        ```
-*   **Function Invocation Points:**
-    *   `optimize_pathway_sequence(...)`: Main logic for multi-step optimization. (Reads `st.session_state.df_employees`, `st.session_state.df_pathways`, `st.session_state.df_occupations`, `st.session_state.PARAMS`).
-    *   `plot_current_vs_projected_ai_r(...)`: (Adapted from `source.py` to return a `matplotlib` figure for `st.pyplot`) Visualizes the current vs. projected AI-R scores.
-*   **`st.session_state` Usage:**
-    *   **Reads**: `st.session_state.df_employees`, `st.session_state.df_occupations`, `st.session_state.df_pathways`, `st.session_state.PARAMS`, `st.session_state.selected_employee_id_opt`, `st.session_state.T_max_hours_opt`, `st.session_state.cost_weight_lambda_opt`, `st.session_state.optimization_results`.
-    *   **Updates**: `st.session_state.selected_employee_id_opt`, `st.session_state.T_max_hours_opt`, `st.session_state.cost_weight_lambda_opt`, `st.session_state.optimization_results`.
+# Navigation Tabs
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "Introduction", "Profile & Goals", "Opportunity Evaluation",
+    "Learning Optimization", "What-If Analysis", "Summary Report"
+])
 
----
+# --- Tab 1: Introduction ---
+with tab1:
+    st.header("Welcome to the AI-Readiness Career Navigator!")
+    st.markdown(f"In the rapidly evolving landscape of financial services, the integration of Artificial Intelligence (AI) is reshaping roles and creating new opportunities.")
+    st.markdown(f"For financial professionals, understanding how to adapt and strategically position oneself is crucial for long-term career success.")
+    st.markdown(f"This application will guide you through a data-driven framework to assess your current AI-readiness, identify high-opportunity career paths, pinpoint skill gaps, and optimize a personalized learning strategy.")
 
-#### **Page: Strategic Recommendations**
+    st.subheader("Your Persona: Alice, a Senior Quantitative Analyst")
+    st.markdown(f"You will step into the shoes of **Alice, a Senior Quantitative Analyst at QuantFinance Innovations**, a leading financial institution.")
+    st.markdown(f"Alice is keen to leverage AI to advance her career but is unsure which AI-enabled roles offer the best prospects given her background, and what specific skills she needs to acquire.")
+    st.markdown(f"This tool will help Alice make informed decisions about her professional development and maximize her career trajectory in the age of AI.")
 
-*   **Application Flow & Persona Focus:** This page consolidates all insights for AI Workforce leaders and HR executives, offering actionable recommendations based on the comprehensive AI-Readiness assessment, skills gap analysis, and training simulations. It provides a strategic roadmap for continuous workforce adaptation.
-*   **Markdown:**
-    ```python
-    st.title("Strategic Recommendations & Conclusion")
-    st.markdown(f"Leverage data-driven insights to formulate actionable strategies for AI workforce development.")
-    st.markdown(f"---")
-    st.header("Strategic Recommendations for AI Workforce Development")
-    st.markdown(f"Based on the AI-Readiness assessment, skills gap analysis, and 'What-If' scenario simulations, we can formulate strategic recommendations for workforce development. These insights move beyond static skill inventories, providing a dynamic framework for continuous adaptation in an AI-transformed landscape.")
-    st.markdown(f"**Summary of Insights:**")
+    st.subheader("The AI-Readiness Score (AI-R) Framework")
+    st.markdown(f"The core of this analysis is the **AI-Readiness Score (AI-R)**, a novel parametric framework that quantifies an individual's preparedness for AI-enabled careers.")
+    st.markdown(f"It decomposes career opportunity into two orthogonal components: **Idiosyncratic Readiness ($V^R$)**, representing individual-specific capabilities, and **Systematic Opportunity ($H^R$)**, representing macro-level job growth and demand.")
+    st.markdown(f"The framework also incorporates a **Synergy Function** to capture the compounding benefits when individual preparation aligns with market opportunity.")
 
-    # Insight 1: Identify low AI-R cohorts and their drivers
-    st.subheader("1. Target Low AI-R Cohorts with Driver-Specific Interventions")
-    st.markdown(f"Identify employees with significantly lower AI-R scores and analyze whether their low score is primarily driven by low Idiosyncratic Readiness ($V^R$) or insufficient Systematic Opportunity ($H^R$) in their current role. Tailor interventions accordingly.")
-    low_ai_r_cohorts = st.session_state.df_employees.sort_values(by='current_ai_r_score').head(5)
-    st.markdown(f"**Example: Top 5 Employees with Lowest AI-R Scores**")
-    st.dataframe(low_ai_r_cohorts[['employee_id', 'job_role', 'department', 'current_ai_r_score', 'vr_score', 'hr_r_score']].set_index('employee_id'))
-    st.markdown(f"*   **Action:** For employees with low $V^R$, recommend AI-Fluency focused training. For those with low $H^R$, consider internal mobility options or upskilling for roles with higher market opportunity.")
-
-    # Insight 2: Pinpoint critical skills gaps (references Dashboard insights)
-    st.subheader("2. Address Critical Skills Gaps via Targeted Upskilling")
-    st.markdown(f"Based on the Skills Gap Heatmap (from the Dashboard), common weaknesses can be identified. For instance, if 'Business Analyst' roles show lower 'Adaptive-Capacity' scores, a targeted training program focusing on 'Strategic Career Management' or 'Cognitive Flexibility' would be beneficial.")
-    st.markdown(f"*   **Example:** If 'Data Scientist' roles generally excel in 'AI-Fluency' but show gaps in 'Domain-Expertise', prioritize advanced domain-specific AI applications and certifications.")
-
-    # Insight 3: Recommend specific learning pathways (references Optimization results)
-    st.subheader("3. Implement Optimized Multi-Step Learning Pathways")
-    if st.session_state.optimization_results:
-        opt_res = st.session_state.optimization_results
-        st.markdown(f"For employee **{opt_res['selected_employee_id']}** (current AI-R: **{opt_res['current_ai_r']:.2f}**), the optimization identified the following sequence to maximize AI-R improvement within budget and time constraints:")
-        st.markdown(f"*   **Recommended Pathway Sequence:** {', '.join(opt_res['recommended_sequence']) if opt_res['recommended_sequence'] else 'No pathways recommended'}")
-        st.markdown(f"*   **Projected AI-R Improvement:** {opt_res['ai_r_improvement']:.2f}")
-        st.markdown(f"*   **Total Cost:** ${opt_res['total_cost']:.2f}, **Total Time (hours):** {opt_res['total_time_hours']:.2f}")
-    else:
-        st.markdown(f"No pathway optimization has been run yet. Please use the 'Pathway Optimization' page to generate recommendations.")
-    st.markdown(f"*   **Action:** Leverage such optimized pathways to guide individual career development plans, balancing cost, time, and impact.")
-
-    # Insight 4: Highlight roles with high HR^R but low V^R
-    st.subheader("4. Invest Strategically in High Opportunity, Low Readiness Roles")
-    high_hr_low_vr_roles = st.session_state.df_employees[(st.session_state.df_employees['hr_r_score'] > 70) & (st.session_state.df_employees['vr_score'] < 60)]
-    if not high_hr_low_vr_roles.empty:
-        st.markdown(f"Identify job roles that have high Systematic Opportunity ($H^R$) but where the current workforce has lower Idiosyncratic Readiness ($V^R$). These are prime candidates for strategic investment.")
-        st.markdown(f"**Example: Employees in High $H^R$ / Low $V^R$ Roles**")
-        st.dataframe(high_hr_low_vr_roles[['employee_id', 'job_role', 'hr_r_score', 'vr_score', 'current_ai_r_score']].head().set_index('employee_id'))
-        st.markdown(f"*   **Action:** For these roles, focused upskilling on AI-Fluency and Domain-Expertise (specific to the high $H^R$ area) will yield high returns.")
-    else:
-        st.markdown(f"All employees in this simulation appear to have a balanced $H^R$ and $V^R$, or no explicit high opportunity/low readiness roles were identified.")
-
-    # Insight 5: Emphasize adaptive capacities
-    st.subheader("5. Foster Continuous Learning and Adaptive Capacity")
-    st.markdown(f"The rapid pace of AI evolution necessitates a workforce with strong adaptive capacities. Emphasize training that builds cognitive flexibility, social-emotional intelligence for human-AI collaboration, and strategic career management skills across all employee levels.")
-    st.markdown(f"*   **Action:** Integrate 'Adaptive-Capacity' boosting modules into all major learning initiatives and promote a culture of continuous learning and experimentation.")
-
-    st.markdown("---")
-    st.markdown(f"This application provides a robust, quantitative framework for proactive workforce planning. By dynamically assessing AI-Readiness, analyzing skill gaps, and simulating training impacts, organizations can make informed investments in their human capital, ensuring competitiveness and adaptability in the evolving AI landscape. The framework's flexibility allows for continuous recalibration and adaptation as market demands and individual capabilities evolve.")
-    ```
-*   **Function Invocation Points:** None directly, but the insights displayed rely on `st.session_state.df_employees` (which has all calculated scores) and `st.session_state.optimization_results`.
-*   **`st.session_state` Usage:**
-    *   **Reads**: `st.session_state.df_employees`, `st.session_state.optimization_results`.
-    *   **Updates**: None.
-
----
-
-#### **Page: AI-R Overview**
-
-*   **Application Flow & Persona Focus:** This page is for any persona interested in understanding the foundational concepts. It provides a detailed, formula-driven introduction to the AI-Readiness Framework, ensuring transparency and theoretical grounding for the metrics used throughout the application.
-*   **Markdown:**
-    ```python
-    st.title("The AI-Readiness Framework: Core Concepts")
-    st.header("Introduction to the AI-Readiness Framework")
-    st.markdown(f"The AI-Readiness Score (AI-R) is a novel parametric framework designed to quantify an individual's preparedness for success in AI-enabled careers. It decomposes career opportunity into two orthogonal components: Systematic Opportunity ($H^R$), representing macro-level job growth and demand, and Idiosyncratic Readiness ($V^R$), representing individual-specific capabilities. A Synergy factor captures the multiplicative benefits when individual readiness aligns with market opportunity.")
-    st.markdown(f"The core formula for the AI-Readiness Score for individual $i$ at time $t$ is defined as:")
-    st.markdown(r"$$AI-R_{i,t} = \alpha \cdot V^R_{i}(t) + (1 - \alpha) \cdot H^R(t) + \beta \cdot Synergy\%(V^R, H^R)$$")
+    st.markdown(r"$$AI-R_{{i,t}} = \alpha \cdot V_i^R(t) + (1 - \alpha) \cdot H_{{i}}^R(t) + \beta \cdot Synergy\%(V_i^R, H_{{i}}^R)$$")
     st.markdown(f"where:")
-    st.markdown(f"*   $V^R_{i}(t)$: Idiosyncratic Readiness (individual capability).")
-    st.markdown(f"*   $H^R(t)$: Systematic Opportunity (market demand).")
-    st.markdown(f"*   $\\alpha \\in [0,1]$: Weight on individual vs. market factors. For this notebook, we'll use $\\alpha = 0.6$.")
-    st.markdown(f"*   $\\beta > 0$: Synergy coefficient. For this notebook, we'll use $\\beta = 0.15$.")
-    st.markdown(f"*   Both $V^R$ and $H^R$ are normalized to $[0, 100]$.")
-    st.markdown(f"*   $Synergy\\% \\in [0,100]$ (percentage units).")
-    st.markdown(f"This framework allows for dynamic 'what-if' scenario planning, helping to guide targeted upskilling initiatives and talent development.")
-    st.markdown(f"This section demonstrates how the final AI-R score is computed by combining the Idiosyncratic Readiness ($V^R$), Systematic Opportunity ($H^R$), and Synergy components, weighted by the parameters $\\alpha$ and $\\beta$. The example reflects a scenario where an individual has strong readiness in a high-opportunity field with good alignment, resulting in a high AI-R score.")
-    ```
-*   **Function Invocation Points:** None.
-*   **`st.session_state` Usage:** None directly.
+    st.markdown(f"*   $V_i^R(t)$: Idiosyncratic Readiness (individual capability), normalized to $[0, 100]$.")
+    st.markdown(f"*   $H_i^R(t)$: Systematic Opportunity (market demand) for the target occupation, normalized to $[0, 100]$.")
+    st.markdown(f"*   $\\alpha \\in [0,1]$: Weight on individual vs. market factors. Default $\\alpha = {ALPHA}$.")
+    st.markdown(f"*   $\\beta > 0$: Synergy coefficient, capturing multiplicative benefits. Default $\\beta = {BETA}$.")
+    st.markdown(f"*   $Synergy\% \\in [0,100]$: Percentage units.")
+    st.markdown(f"By walking through this workflow, Alice will gain personalized, data-driven career guidance, ensuring her learning investments are impactful for high-opportunity roles in finance.")
 
----
+# --- Tab 2: Profile & Goals ---
+with tab2:
+    st.header("1. Your Professional Profile & Target Roles")
+    st.markdown(f"Alice, a Senior Quantitative Analyst, has a solid background in financial modeling, risk analysis, and Python programming.")
+    st.markdown(f"She's exploring various AI-enabled roles within finance to identify the most promising path for her career growth.")
+    st.markdown(f"Please review and adjust your professional profile and select the target roles you're considering.")
 
-#### **Page: Systematic Opportunity ($H^R$)**
+    col1, col2 = st.columns(2)
 
-*   **Application Flow & Persona Focus:** This page provides in-depth information for economists, data scientists, and leaders interested in the macro-level factors influencing career opportunities. It explains how external market forces contribute to an individual's AI-Readiness score.
-*   **Markdown:**
-    ```python
-    st.title("Systematic Opportunity ($H^R$) Component")
-    st.header("Conceptual Definition")
-    st.markdown(f"Systematic Opportunity ($H^R$) represents the macro-level demand and growth potential in AI-enabled occupations. Following portfolio theory, this is analogous to market beta—an individual cannot create these opportunities through their own actions, but they can position themselves to benefit from favorable market conditions.")
-    st.markdown(f"For individual $i$ targeting occupation $o_{target}$ at time $t$:")
-    st.markdown(r"$$H^R(t) = H_{\text{base}}(O_{\text{target}}) \cdot M_{\text{growth}}(t) \cdot M_{\text{regional}}(t)$$")
-    st.markdown(f"where $H_{\text{base}}$ is the base opportunity score, $M_{\text{growth}}$ captures temporal momentum, and $M_{\text{regional}}$ adjusts for geographic factors.")
+    with col1:
+        st.subheader("1.1. Professional Background")
+        st.markdown(f"**General Information**")
+        st.session_state['alice_profile']['education_level'] = st.selectbox(
+            "Education Level",
+            ['Master\'s in Finance', 'PhD in target field', 'Master\'s in target field',
+             'Bachelor\'s in target field', 'Associate\'s/Certificate', 'HS + significant coursework'],
+            index=['Master\'s in Finance', 'PhD in target field', 'Master\'s in target field',
+                   'Bachelor\'s in target field', 'Associate\'s/Certificate', 'HS + significant coursework'].index(st.session_state['alice_profile']['education_level'])
+        )
+        st.session_state['alice_profile']['experience_years'] = st.number_input(
+            "Years of Experience",
+            min_value=0, max_value=40, value=st.session_state['alice_profile']['experience_years']
+        )
+        st.markdown("---")
+        st.markdown(f"**AI-Fluency Sub-Factors (Scores 0-1)**")
+        for k, v in st.session_state['alice_profile']['ai_fluency_subfactors'].items():
+            st.session_state['alice_profile']['ai_fluency_subfactors'][k] = st.slider(
+                f"{k.replace('_', ' ').title()}", 0.0, 1.0, float(v), 0.01, key=f"ai_fluency_{k}"
+            )
+        st.markdown("---")
+        st.markdown(f"**Domain-Expertise Sub-Factors (Scores 0-1)**")
+        for k, v in st.session_state['alice_profile']['domain_expertise_subfactors'].items():
+            st.session_state['alice_profile']['domain_expertise_subfactors'][k] = st.slider(
+                f"{k.replace('_', ' ').title()}", 0.0, 1.0, float(v), 0.01, key=f"domain_exp_{k}"
+            )
+        st.markdown("---")
+        st.markdown(f"**Adaptive-Capacity Sub-Factors (Scores 0-1)**")
+        for k, v in st.session_state['alice_profile']['adaptive_capacity_subfactors'].items():
+            st.session_state['alice_profile']['adaptive_capacity_subfactors'][k] = st.slider(
+                f"{k.replace('_', ' ').title()}", 0.0, 1.0, float(v), 0.01, key=f"adaptive_cap_{k}"
+            )
 
-    st.subheader("Base Opportunity Score ($H_{\text{base}}$)")
-    st.markdown(f"The Base Opportunity Score ($H_{\text{base}}(o)$) aggregates the various dimensions of occupational attractiveness: AI-Enhancement Potential, Job Growth Projections, Wage Premium, and Entry Accessibility. It is calculated as a weighted sum:")
-    st.markdown(r"$$H_{\text{base}}(o) = w_1 \cdot AI\text{-}Enhancement_o + w_2 \cdot Growth_{\text{normalized}} + w_3 \cdot Wage_o + w_4 \cdot Access_o$$")
-    st.markdown(f"The weights ($w_j$) reflect the relative importance of each factor, as defined in the `PARAMS` dictionary ($w_1 = 0.30$, $w_2 = 0.30$, $w_3 = 0.25$, $w_4 = 0.15$). The final score is then scaled to $[0,100]$.")
-    
-    st.markdown(f"**1. AI-Enhancement Potential**")
-    st.markdown(f"Measures how much AI augments rather than replaces tasks:")
-    st.markdown(r"$$AI\text{-}Enhancement_o = \frac{1}{|T_o|} \sum_{t \in T_o} (1 - Automation_t) \cdot AI\text{-}Augmentation_t$$")
-    st.markdown(f"where $T_o$ is the set of tasks for occupation $o$, $Automation_t \\in [0,1]$ measures replaceability, and $AI\text{-}Augmentation_t \\in [0,1]$ measures productivity enhancement. For simplicity in our synthetic data, we directly include an aggregated `ai_enhancement_potential` for each occupation.")
-    st.markdown(f"This step demonstrates how the AI-Enhancement Potential, a key sub-component of $H^R$, is retrieved for a specific job role. This value reflects the degree to which AI is expected to augment, rather than automate, tasks within that occupation, indicating its future relevance.")
-    
-    st.markdown(f"**2. Job Growth Projections**")
-    st.markdown(f"Quantify the expected increase or decrease in employment for an occupation over a given period (e.g., 10 years). The raw growth rate $g$ is calculated as:")
-    st.markdown(r"$$Growth_o = \frac{\text{Projected Jobs}_{o,t+10} - \text{Current Jobs}_{o,t}}{\text{Current Jobs}_{o,t}}$$")
-    st.markdown(f"This raw growth rate is then normalized to a scale of $[0, 100]$ using an affine transformation:")
-    st.markdown(r"$$Growth_{\text{normalized}} = \frac{g + 0.5}{2.0} \times 100$$")
-    st.markdown(f"This transformation maps a growth rate range of $g \\in [-0.5, 1.5]$ (representing -50% to +150% change) to $[0,100]$.")
-    st.markdown(f"The normalized job growth score provides a standardized measure of an occupation's future demand, directly contributing to its Systematic Opportunity. A higher normalized score indicates a greater projected increase in job availability, making the occupation more attractive in the AI-transformed labor market.")
+    with col2:
+        st.subheader("1.2. Current Skill Levels (Proficiency 0-10)")
+        for k, v in st.session_state['alice_profile']['current_skills'].items():
+            st.session_state['alice_profile']['current_skills'][k] = st.slider(
+                f"{k.replace('_', ' ').title()}", 0, 10, int(v), key=f"current_skill_{k}"
+            )
+        st.subheader("1.3. Target AI-Enabled Financial Roles")
+        all_possible_roles = st.session_state['systematic_df']['role'].unique().tolist()
+        st.session_state['target_roles'] = st.multiselect(
+            "Select Target Roles",
+            options=all_possible_roles,
+            default=st.session_state['target_roles']
+        )
 
-    st.markdown(f"**3. Wage Premium & Entry Accessibility**")
-    st.markdown(f"Two other critical factors contributing to Systematic Opportunity are Wage Premium and Entry Accessibility.")
-    st.markdown(f"**Wage Premium** ($Wage_o$) measures the compensation potential for AI-skilled roles relative to the median wage in that occupation:")
-    st.markdown(r"$$Wage_o = \frac{\text{AI-skilled wage}_o - \text{median wage}_o}{\text{median wage}_o}$$")
-    st.markdown(f"This provides an indication of the economic value placed on AI-related skills within a role.")
-    st.markdown(f"**Entry Accessibility** ($Access_o$) quantifies the ease of transitioning into a role, based on typical educational and experience requirements:")
-    st.markdown(r"$$Access_o = 1 - \frac{\text{Education Years Required} + \text{Experience Years Required}}{10}$$")
-    st.markdown(f"This linear formula provides a simplified measure, where a higher score indicates easier entry.")
-    st.markdown(f"These calculations complete the primary sub-components of the Base Opportunity Score. Wage Premium highlights the financial attractiveness of an AI-enabled role, while Entry Accessibility provides insight into the practical barriers for individuals considering a transition, both being crucial for assessing Systematic Opportunity.")
+    if st.button("Calculate Initial Readiness & Opportunity"):
+        # Calculate VR
+        st.session_state['alice_ai_fluency_score'] = calculate_ai_fluency(st.session_state['alice_profile']['ai_fluency_subfactors'], AI_FLUENCY_THETA_WEIGHTS)
+        st.session_state['alice_domain_expertise_score'] = calculate_domain_expertise(
+            st.session_state['alice_profile']['education_level'],
+            st.session_state['alice_profile']['experience_years'],
+            st.session_state['alice_profile']['domain_expertise_subfactors'],
+            GAMMA_EXPERIENCE_DECAY
+        )
+        st.session_state['alice_adaptive_capacity_score'] = calculate_adaptive_capacity(st.session_state['alice_profile']['adaptive_capacity_subfactors'])
+        st.session_state['alice_vr_score'] = calculate_vr(
+            st.session_state['alice_ai_fluency_score'],
+            st.session_state['alice_domain_expertise_score'],
+            st.session_state['alice_adaptive_capacity_score'],
+            VR_COMPONENT_WEIGHTS
+        )
 
-    st.subheader("Dynamic Multipliers: Growth & Regional")
-    st.markdown(f"Beyond the static Base Opportunity Score, Systematic Opportunity is modulated by dynamic, time-varying market factors:")
-    st.markdown(f"**1. Growth Multiplier ($M_{\text{growth}}(t)$):** Captures market momentum based on recent changes in job postings.")
-    st.markdown(r"$$M_{\text{growth}}(t) = 1 + \lambda \cdot \left( \frac{\text{Job Postings}_{o,t}}{\text{Job Postings}_{o,t-1}} - 1 \right)$$")
-    st.markdown(f"where $\\lambda = 0.3$ dampens volatility, keeping the multiplier typically between $0.7$ and $1.3$.")
-    st.markdown(f"**2. Regional Multiplier ($M_{\text{regional}}(t)$):** Adjusts for local labor market conditions and remote work suitability.")
-    st.markdown(r"$$M_{\text{regional}}(t) = \frac{\text{Local Demand}_{i,t}}{\text{National Avg Demand}} \times (1 + \gamma \cdot \text{Remote Work Factor}_o)$$")
-    st.markdown(f"where $\\gamma = 0.2$ and $Remote Work Factor \\in [0,1]$ measures the occupation's suitability for remote work. For simplicity, we assume `Local Demand` equals `National Avg Demand` for the primary calculation and focus on the `Remote Work Factor` contribution.")
-    st.markdown(f"The dynamic multipliers introduce responsiveness to market fluctuations. The Growth Multiplier reflects current hiring trends, while the Regional Multiplier accounts for geographical demand and the increasing prevalence of remote work. These factors ensure that the Systematic Opportunity score remains relevant to contemporary market conditions.")
-    st.markdown(f"The final Systematic Opportunity score ($H^R(t)$) for an individual $i$ targeting occupation $o_{\text{target}}$ at time $t$ is calculated by combining the Base Opportunity Score with the dynamic multipliers.")
-    st.markdown(f"This step completes the calculation of the Systematic Opportunity component for each employee, linking their current job role to market conditions. This score highlights external career potential that individuals can position themselves to capture.")
-    ```
-*   **Function Invocation Points:** None.
-*   **`st.session_state` Usage:** None directly.
+        # Calculate HR for each target role
+        hr_scores_temp = {}
+        for role in st.session_state['target_roles']:
+            role_data = st.session_state['systematic_df'][st.session_state['systematic_df']['role'] == role].iloc[0]
+            jp_role_data = st.session_state['job_postings_df'][st.session_state['job_postings_df']['role'] == role].iloc[-1]
+            rd_role_data = st.session_state['regional_demand_df'][st.session_state['regional_demand_df']['role'] == role].iloc[0]
 
----
+            growth_rate = (role_data['projected_jobs_10yr'] - role_data['current_jobs']) / role_data['current_jobs']
+            growth_normalized = normalize_growth(growth_rate)
+            wage_premium = calculate_wage_premium(role_data['ai_skilled_wage'], role_data['median_wage'])
+            entry_accessibility = calculate_entry_accessibility(role_data['education_years_required'], role_data['experience_years_required'])
 
-#### **Page: Idiosyncratic Readiness ($V^R$)**
+            hbase = calculate_hbase(
+                role_data['ai_enhancement_potential'],
+                growth_normalized,
+                wage_premium,
+                entry_accessibility,
+                HBASE_WEIGHTS
+            )
+            mgrowth = calculate_mgrowth(jp_role_data['job_postings_t'], jp_role_data['job_postings_t_minus_1'], LAMBDA_GROWTH_MULTIPLIER)
+            mregional = calculate_mregional(rd_role_data['local_demand'], rd_role_data['national_avg_demand'], role_data['remote_work_factor'], GAMMA_REMOTE_WORK)
 
-*   **Application Flow & Persona Focus:** This page targets HR professionals and individuals focused on personal development. It breaks down the individual capabilities that contribute to AI-readiness, explaining how skills can be actively developed through learning and experience.
-*   **Markdown:**
-    ```python
-    st.title("Idiosyncratic Readiness ($V^R$) Component")
-    st.header("Conceptual Definition")
-    st.markdown(f"Idiosyncratic Readiness ($V^R$) measures an individual's specific preparation to succeed in AI-enabled careers. Unlike systematic opportunity, these factors can be directly improved through deliberate learning and skill development.")
-    st.markdown(f"The final Idiosyncratic Readiness score ($V^R(t)$) aggregates AI-Fluency, Domain-Expertise, and Adaptive-Capacity. This score quantifies an individual's personal preparation to succeed in AI-enabled careers, factors that can be directly improved through deliberate learning and skill development. It is a weighted sum:")
-    st.markdown(r"$$V^R(t) = w_{\text{VR1}} \cdot AI\text{-}Fluency_i(t) + w_{\text{VR2}} \cdot Domain\text{-}Expertise_i(t) + w_{\text{VR3}} \cdot Adaptive\text{-}Capacity_i(t)$$")
-    st.markdown(f"The weights ($w_{\text{VR1}} = 0.45$, $w_{\text{VR2}} = 0.35$, $w_{\text{VR3}} = 0.20$) reflect the assessment that AI-Fluency is the most critical factor, followed by Domain-Expertise, with Adaptive-Capacity playing a supporting role (weights are from `PARAMS`). The final $V^R$ score is normalized to $[0, 100]$.")
-    st.markdown(f"This completes the calculation of the individual-specific readiness component. The $V^R$ score provides a holistic view of an individual's intrinsic capabilities and potential for growth in AI-driven roles, serving as a critical counterpart to the market-driven $H^R$.")
+            hr_score = calculate_hr(hbase, mgrowth, mregional)
+            hr_scores_temp[role] = hr_score
+        st.session_state['hr_scores'] = hr_scores_temp
 
-    st.subheader("AI-Fluency Factor")
-    st.markdown(f"The AI-Fluency factor is a key sub-component, representing the ability to effectively use, understand, and collaborate with AI systems. It is calculated as a weighted sum of four sub-components:")
-    st.markdown(r"$$AI\text{-}Fluency_i = \sum_{k=1}^4 \theta_k \cdot S_{i,k}$$")
-    st.markdown(f"The sub-components ($S_{i,k}$) and their weights ($\\theta_k$ from `PARAMS`) are:")
-    st.markdown(f"**1. Technical AI Skills** ($S_{i,1}$, $\\theta_1 = 0.30$): Based on Prompting, Tools, Understanding, and Data Literacy scores.")
-    st.markdown(r"$$S_{i,1} = \frac{1}{4} (\text{Prompting}_i + \text{Tools}_i + \text{Understanding}_i + \text{DataLit}_i)$$")
-    st.markdown(f"**2. AI-Augmented Productivity** ($S_{i,2}$, $\\theta_2 = 0.35$): Measures productivity gains with AI assistance.")
-    st.markdown(r"$$S_{i,2} = \frac{\text{Output Quality}_{i,\text{with AI}}}{\text{Output Quality}_{i,\text{without AI}}} \cdot \frac{\text{Time}_{i,\text{without AI}}}{\text{Time}_{i,\text{with AI}}}$$")
-    st.markdown(f"For simplicity, our synthetic data has `ai_augmented_productivity_norm` pre-calculated based on this concept.")
-    st.markdown(f"**3. Critical AI Judgment** ($S_{i,3}$, $\\theta_3 = 0.20$): Assesses error detection and appropriate trust decisions with AI outputs.")
-    st.markdown(r"$$S_{i,3} = \frac{\text{Errors Caught}_i}{\text{Total AI Errors}} + \frac{\text{Appropriate Trust Decisions}_i}{\text{Total Decisions}}$$")
-    st.markdown(f"For simplicity, our synthetic data provides `errors_caught_norm` and `trust_decisions_norm` which we'll combine and re-normalize.")
-    st.markdown(f"**4. AI Learning Velocity** ($S_{i,4}$, $\\theta_4 = 0.15$): Measures improvement rate per unit time investment.")
-    st.markdown(r"$$S_{i,4} = \frac{\Delta Proficiency_i}{\Delta t} \cdot \frac{1}{\text{Hours Invested}}$$")
-    st.markdown(f"For simplicity in this notebook, $\\Delta Proficiency_i / \\Delta t$ can be approximated as a 'learning_rate' for simulation purposes and then scaled with `hours_invested`.")
-    st.markdown(f"The AI-Fluency score provides a detailed individual assessment of an employee's ability to interact with and leverage AI technologies. This multi-faceted measure highlights specific areas where an individual might excel or need further development in their AI-related capabilities.")
+        st.success("Initial Readiness & Opportunity calculated! Proceed to the next tab.")
+        # Trigger re-run to update subsequent tabs
+        st.experimental_rerun()
 
-    st.subheader("Domain-Expertise Factor")
-    st.markdown(f"Domain-Expertise captures an individual's depth of knowledge in specific application areas, complementing their AI-Fluency. It is a multiplicative combination of Educational Foundation, Practical Experience, and Specialization Depth:")
-    st.markdown(r"$$Domain\text{-}Expertise_i = E_{\text{education}} \cdot E_{\text{experience}} \cdot E_{\text{specialization}}$$")
-    st.markdown(f"**1. Educational Foundation ($E_{\text{education}}$):** Discrete values based on education level (e.g., PhD=1.0, Master's=0.85, Bachelor's=0.70, Associate's/Certificate=0.60, HS+Coursework=0.50).")
-    st.markdown(f"**2. Practical Experience ($E_{\text{experience}}$):** Measured by years of experience with diminishing returns:")
-    st.markdown(r"$$E_{\text{experience}} = 1 - e^{-\gamma_{\text{exp}} \cdot Years}$$")
-    st.markdown(f"where $\\gamma_{\text{exp}} = 0.15$.")
-    st.markdown(f"**3. Specialization Depth ($E_{\text{specialization}}$):** Reflects specific achievements and recognition in their field:")
-    st.markdown(r"$$E_{\text{specialization}} = w_{\text{port}} \cdot \text{Portfolio}_i + w_{\text{recog}} \cdot \text{Recognition}_i + w_{\text{cred}} \cdot \text{Credentials}_i$$")
-    st.markdown(f"where $w_{\text{port}} = 0.4$, $w_{\text{recog}} = 0.3$, $w_{\text{cred}} = 0.3$.")
-    st.markdown(f"Domain-Expertise underscores the importance of deep, specialized knowledge in specific fields, which AI tools are designed to augment. This score provides a quantitative measure of an individual's subject matter mastery, a crucial complement to their AI-Fluency.")
+# --- Tab 3: Opportunity Evaluation ---
+with tab3:
+    st.header("2. Opportunity Evaluation: AI-Readiness, VR, HR & Skill Gaps")
+    st.markdown(f"Here, Alice synthesizes her individual capabilities ($V^R$) with market opportunities ($H^R$) to calculate her comprehensive AI-Readiness Score (AI-R) for each target role.")
+    st.markdown(f"A critical aspect is the **Synergy Function**, which captures multiplicative benefits when individual skills align with market demand.")
 
-    st.subheader("Adaptive-Capacity Factor")
-    st.markdown(f"Adaptive-Capacity measures the meta-skills that enable successful navigation of AI-driven transitions, focusing on an individual's ability to learn, adapt, and interact effectively in new environments. It is an equally weighted sum of three meta-skills:")
-    st.markdown(r"$$Adaptive\text{-}Capacity_i = \frac{1}{3} (C_{\text{cognitive}} + C_{\text{social}} + C_{\text{strategic}})$$")
-    st.markdown(f"where each $C$ component is scored on a scale of $[0, 100]$:")
-    st.markdown(f"*   **Cognitive Flexibility ($C_{\text{cognitive}}$):** Problem-solving in novel contexts, transfer learning, creative application of AI tools.")
-    st.markdown(f"*   **Social-Emotional Intelligence ($C_{\text{social}}$):** Empathy, negotiation, leadership, human-AI collaboration.")
-    st.markdown(f"*   **Strategic Career Management ($C_{\text{strategic}}$):** Awareness of AI trends, proactive skill development, network building.")
-    st.markdown(f"Adaptive-Capacity highlights an individual's inherent ability to thrive in a rapidly changing AI landscape. These meta-skills are increasingly vital for sustained career success, as they enable individuals to continuously learn, adapt, and collaborate effectively with both humans and AI.")
-    ```
-*   **Function Invocation Points:** None.
-*   **`st.session_state` Usage:** None directly.
+    if st.session_state['alice_vr_score'] is None or not st.session_state['hr_scores']:
+        st.warning("Please go to 'Profile & Goals' tab and calculate initial readiness.")
+    else:
+        st.subheader("2.1. Idiosyncratic Readiness ($V^R$) Breakdown")
+        st.markdown(f"Alice's journey begins with understanding her intrinsic capabilities and preparedness for AI-enabled roles, measured by her **Idiosyncratic Readiness ($V^R$)**.")
+        st.markdown(f"This is a score you can actively develop through learning.")
+        st.markdown(r"$$V^R(t) = w_1 \cdot AI\text{{-}}Fluency_i(t) + w_2 \cdot Domain\text{{-}}Expertise_i(t) + w_3 \cdot Adaptive\text{{-}}Capacity_i(t)$$")
+        st.markdown(f"where $w_1 = {VR_W1_AI_FLUENCY}$, $w_2 = {VR_W2_DOMAIN_EXPERTISE}$, $w_3 = {VR_W3_ADAPTIVE_CAPACITY}$.")
 
----
+        col_vr1, col_vr2, col_vr3, col_vr4 = st.columns(4)
+        col_vr1.metric("Total VR Score", f"{st.session_state['alice_vr_score']:.2f}")
+        col_vr2.metric("AI-Fluency", f"{st.session_state['alice_ai_fluency_score']:.2f}")
+        col_vr3.metric("Domain-Expertise", f"{st.session_state['alice_domain_expertise_score']:.2f}")
+        col_vr4.metric("Adaptive-Capacity", f"{st.session_state['alice_adaptive_capacity_score']:.2f}")
 
-#### **Page: Synergy Function**
+        st.markdown(f"Alice's $V^R$ score of **{st.session_state['alice_vr_score']:.2f}** indicates a strong individual foundation for AI-enabled roles. Her breakdown shows solid scores across all three main components.")
+        st.markdown(f"*   **AI-Fluency:** Her score suggests she's moderately proficient in interacting with and understanding AI, but there's room for improvement in areas like AI tools and augmented productivity.")
+        st.markdown(f"*   **Domain-Expertise:** With a Master's degree and {st.session_state['alice_profile']['experience_years']} years of experience in finance, her deep domain knowledge is a significant asset, indicating a strong foundation in her target financial sector roles.")
+        st.markdown(f"*   **Adaptive-Capacity:** Her high score in this area is critical, showing she possesses strong meta-skills like cognitive flexibility and social-emotional intelligence, essential for navigating rapidly changing AI-driven work environments.")
+        st.markdown(f"This $V^R$ score will serve as a baseline to evaluate her potential in various target roles when combined with market opportunities.")
 
-*   **Application Flow & Persona Focus:** This page explains to economists and data scientists how the framework captures the multiplicative benefits of aligning individual capabilities with market opportunities, moving beyond simple additive models.
-*   **Markdown:**
-    ```python
-    st.title("Synergy Function")
-    st.header("Conceptual Basis")
-    st.markdown(f"The Synergy function captures the multiplicative benefits when individual readiness ($V^R$) aligns with market opportunity ($H^R$). It is defined as:")
-    st.markdown(r"$$Synergy\%(V^R, H^R) = \frac{V^R \times H^R}{100} \times Alignment_i$$")
-    st.markdown(f"where both $V^R$ and $H^R$ are on $[0,100]$ scale, and $Alignment_i \\in [0,1]$ ensures $Synergy\\% \\in [0,100]$.")
-    st.markdown(f"The Synergy score formalizes the idea that career success is more than just individual capability plus market demand; it also depends on how well these two factors align. A high synergy score indicates a 'sweet spot' where an individual's unique skills and career stage perfectly intersect with market opportunities.")
+        st.subheader("2.2. Systematic Opportunity ($H^R$) by Target Role")
+        st.markdown(f"Alice needs to understand the external market conditions for her target roles. This is captured by the **Systematic Opportunity ($H^R$)** component, representing macro-level job growth and demand that she can position herself to capture.")
+        st.markdown(r"$$H^R(t) = H_{{base}}(O_{{target}}) \cdot M_{{growth}}(t) \cdot M_{{regional}}(t)$$")
+        st.markdown(f"where $H_{{base}}(o)$ is the base opportunity score, $M_{{growth}}(t)$ is the growth multiplier, and $M_{{regional}}(t)$ is the regional multiplier.")
 
-    st.subheader("Alignment Factor: Skills Match & Timing Factor")
-    st.markdown(f"The $Alignment_i$ factor measures how well individual skills match occupation requirements and career stage:")
-    st.markdown(r"$$Alignment_i = \frac{\text{Skills Match Score}_i}{\text{Maximum Possible Match}} \times \text{Timing Factor}_i$$")
-    st.markdown(f"**1. Skills Match Score:** Using O*NET-like task-skill mappings (simulated through `skill_a` to `skill_j` in our synthetic data), we compute:")
-    st.markdown(r"$$Match_i = \sum_{s \in S} \min(\text{Individual Skill}_{i,s}, \text{Required Skill}_{o,s}) \cdot \text{Importance}_s$$")
-    st.markdown(f"where $S$ is the set of all skills, and the minimum operator ensures that excess skill in one area doesn't compensate for deficiency in critical areas. For `Maximum Possible Match`, we assume a perfect match of 1.0 (after normalization of individual and required skills to 0-1).")
-    st.markdown(f"**2. Timing Factor:** Career stage affects transition ease:")
-    st.markdown(r"$$Timing(y) = \begin{cases} 1.0 & \text{if } y \in [0,5] \text{ (early career)} \\ 1.0 & \text{if } y \in (5,15] \text{ (mid-career)} \\ 0.8 & \text{if } y > 15 \text{ (late career, transition friction)} \end{cases}$$")
-    st.markdown(f"where $y$ is years of experience. Note that all timing values are $\\leq 1.0$ to ensure Alignment remains bounded at $[0, 1]$.")
-    st.markdown(f"The Alignment Factor provides a nuanced measure of how well an individual's skills and career stage align with a specific occupational target. This factor is critical for determining the true 'fit' and the potential for synergy between an individual's readiness and market opportunity.")
-    ```
-*   **Function Invocation Points:** None.
-*   **`st.session_state` Usage:** None directly.
+        st.dataframe(pd.DataFrame(st.session_state['hr_scores'].items(), columns=['Role', 'HR_Score']).round(2).set_index('Role'))
+        st.markdown(f"Alice's Systematic Opportunity ($H^R$) scores vary significantly across her target roles. For example:")
+        st.markdown(f"*   **AI Quant Analyst:** A high score, potentially due to strong AI-enhancement potential and significant wage premiums.")
+        st.markdown(f"*   **Financial Data Scientist:** While robust, this role might have a slightly lower $H^R$ compared to the more specialized AI Quant/ML roles, possibly due to broader applicability or higher entry accessibility.")
+        st.markdown(f"This analysis helps Alice understand where the market opportunities lie, complementing her individual readiness.")
+
+        st.subheader("2.3. Overall AI-Readiness ($AI-R$) Scores and Skill Gaps")
+        st.markdown(f"The overall AI-Readiness Score is calculated by combining $V^R$ and $H^R$ with a synergy factor:")
+        st.markdown(r"$$AI-R_{{i,t}} = \alpha \cdot V_i^R(t) + (1 - \alpha) \cdot H_{{i}}^R(t) + \beta \cdot Synergy\%(V_i^R, H_{{i}}^R)$$")
+        st.markdown(f"where $\\alpha={ALPHA}$ and $\\beta={BETA}$.")
+        st.markdown(f"The Synergy Function is defined as: $$Synergy\%(V^R, H^R) = \\frac{{V^R \\times H^R}}{{100}} \\times Alignment_i$$")
+        st.markdown(f"where $V^R$ and $H^R$ are normalized to $[0, 100]$, and $Alignment_i \\in [0,1]$ combines skill match and timing.")
+
+        # Recalculate AI-R for display and consistency
+        air_results = []
+        all_skill_gaps_temp = {}
+        for role in st.session_state['target_roles']:
+            current_hr_score = st.session_state['hr_scores'].get(role, 0)
+            required_skills_for_role = st.session_state['skill_requirements_df'][st.session_state['skill_requirements_df']['role'] == role].iloc[0]
+            max_possible_match_for_role = required_skills_for_role.drop('role', errors='ignore').sum()
+
+            skills_match, skill_gaps, required_skills_dict, current_skills_total, required_skills_total = calculate_skills_match_score(
+                st.session_state['alice_profile']['current_skills'],
+                required_skills_for_role,
+                max_possible_match_for_role
+            )
+            all_skill_gaps_temp[role] = skill_gaps
+
+            timing_factor = calculate_timing_factor(st.session_state['alice_profile']['experience_years'])
+            alignment_score = calculate_alignment(skills_match, timing_factor)
+            synergy_score = calculate_synergy(st.session_state['alice_vr_score'], current_hr_score, alignment_score)
+            air_score = calculate_air(st.session_state['alice_vr_score'], current_hr_score, synergy_score, ALPHA, BETA)
+
+            air_results.append({
+                'Role': role,
+                'VR_Score': st.session_state['alice_vr_score'],
+                'HR_Score': current_hr_score,
+                'Skills_Match_Score': skills_match * 100,
+                'Timing_Factor': timing_factor,
+                'Alignment_Score': alignment_score * 100,
+                'Synergy_Score': synergy_score,
+                'AI_R_Score': air_score
+            })
+        st.session_state['air_df'] = pd.DataFrame(air_results)
+        st.session_state['all_skill_gaps'] = all_skill_gaps_temp
+        if not st.session_state['air_df'].empty:
+            st.session_state['top_role'] = st.session_state['air_df'].loc[st.session_state['air_df']['AI_R_Score'].idxmax()]
+            st.dataframe(st.session_state['air_df'].round(2).set_index('Role'))
+            st.markdown(f"Alice's Top AI-R Role: **{st.session_state['top_role']['Role']}** (AI-R: **{st.session_state['top_role']['AI_R_Score']:.2f}**)")
+
+            # Plot AI-R Scores
+            fig_air_bar, ax_air_bar = plt.subplots(figsize=(12, 7))
+            air_df_plot = st.session_state['air_df'][['Role', 'AI_R_Score', 'VR_Score', 'HR_Score']].set_index('Role')
+            air_df_plot.plot(kind='bar', ax=ax_air_bar, title='Alice\'s AI-Readiness Scores Across Target Roles')
+            ax_air_bar.set_ylabel('Score (0-100)')
+            ax_air_bar.tick_params(axis='x', rotation=45, ha='right')
+            ax_air_bar.legend(title='Component')
+            plt.tight_layout()
+            st.pyplot(fig_air_bar)
+            plt.close(fig_air_bar)
+
+            st.markdown(f"The bar chart visually confirms this, showing a balance between Alice's personal readiness ($V^R$) and market opportunity ($H^R$) for the top roles.")
+            st.markdown(f"The Synergy component further boosts her AI-R, indicating that her skills and experience align well with these high-opportunity fields.")
+
+            st.subheader(f"Skill Gaps for Recommended Role: {st.session_state['top_role']['Role']}")
+            st.markdown(f"The radar chart, specifically for the **{st.session_state['top_role']['Role']}** role, highlights Alice's current skill levels against the required levels.")
+            
+            top_role_skills = st.session_state['all_skill_gaps'][st.session_state['top_role']['Role']]
+            skills_df = pd.DataFrame(top_role_skills).T.reset_index().rename(columns={'index': 'Skill'})
+            labels = skills_df['Skill'].tolist()
+            current_levels = skills_df['current'].tolist()
+            required_levels = skills_df['required'].tolist()
+
+            # Add first value to the end to close the radar chart
+            labels += labels[:1]
+            current_levels += current_levels[:1]
+            required_levels += required_levels[:1]
+
+            angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False)
+
+            fig_radar, ax_radar = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
+            ax_radar.fill(angles, current_levels, color='blue', alpha=0.25, label='Current Skill Level')
+            ax_radar.plot(angles, current_levels, color='blue', linewidth=2)
+            ax_radar.fill(angles, required_levels, color='red', alpha=0.25, label='Required Skill Level')
+            ax_radar.plot(angles, required_levels, color='red', linewidth=2)
+
+            ax_radar.set_yticklabels([f'{i}' for i in range(0, 11, 2)])
+            ax_radar.set_xticks(angles[:-1])
+ax_radar.set_xticklabels(labels[:-1])
+            ax_radar.set_title(f'Skill Gaps for {st.session_state["top_role"]["Role"]}', size=16, y=1.08)
+            ax_radar.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
+            plt.tight_layout()
+            st.pyplot(fig_radar)
+            plt.close(fig_radar)
+
+            st.markdown(f"Alice has strong foundations in `Risk_Analysis`, `Financial_Modeling`, and `Python`. However, significant gaps exist in `Quant_Models`, `ML_basics`, `AI_Ethics`, `GenAI_Tools`, and `Cloud_Platforms`. Addressing these gaps will be critical for her to fully capture the opportunity in the **{st.session_state['top_role']['Role']}** role.")
+
+
+# --- Tab 4: Learning Optimization ---
+with tab4:
+    st.header("3. Optimizing Learning Pathways for Career Growth")
+    st.markdown(f"Based on her initial AI-R scores and identified skill gaps, Alice wants to invest in learning to maximize her career prospects.")
+    st.markdown(f"However, her time and budget are constrained. This section recommends a sequence of learning activities that maximize her projected AI-R gain under these specified resource constraints.")
+    st.markdown(f"The objective is to maximize the gain in AI-R minus a weighted cost:")
+    st.markdown(r"$$ \max_{{P_1,...,P_K}} (AI\text{{-}}R_{{proj}} - AI\text{{-}}R_{{current}}) - \lambda \cdot \sum_{{k=1}}^K Cost(p_k) $$")
+    st.markdown(f"subject to:")
+    st.markdown(r"$$ \sum_{{k=1}}^K Time(p_k) \le T_{{max}} $$")
+    st.markdown(r"$$ \sum_{{k=1}}^K Cost(p_k) \le B_{{max}} $$")
+    st.markdown(r"$$ p_k \in P_{{feasible}} $$")
+    st.markdown(r"$$ Prerequisites(p_k) \subseteq \{{P_1,...,P_{{k-1}}\}} $$")
+    st.markdown(f"where $AI\text{{-}}R_{{proj}}$ is the projected AI-R after completing pathways, $AI\text{{-}}R_{{current}}$ is her initial AI-R, $\\lambda$ is `LAMBDA_COST_WEIGHT`, $T_{{max}}$ is `MAX_LEARNING_TIME_HOURS`, and $B_{{max}}$ is `MAX_LEARNING_BUDGET_USD`.")
+    st.markdown(f"For this demonstration, we'll use a greedy heuristic: selecting pathways one by one that offer the highest 'return' (AI-R point gain per unit of weighted time/cost) until constraints are met, respecting prerequisites.")
+
+    if st.session_state['top_role'] is None or not st.session_state['top_role']:
+        st.warning("Please go to 'Opportunity Evaluation' tab to identify the top role first.")
+    else:
+        st.subheader(f"Target Role for Optimization: **{st.session_state['top_role']['Role']}**")
+        st.markdown(f"Initial AI-R for this role: **{st.session_state['top_role']['AI_R_Score']:.2f}**")
+
+        st.subheader("3.1. Set Learning Constraints")
+        st.session_state['max_learning_time_hours'] = st.number_input(
+            "Maximum Learning Time (hours)",
+            min_value=0, max_value=500, value=st.session_state['max_learning_time_hours'], step=10
+        )
+        st.session_state['max_learning_budget_usd'] = st.number_input(
+            "Maximum Learning Budget (USD)",
+            min_value=0, max_value=5000, value=st.session_state['max_learning_budget_usd'], step=100
+        )
+        st.session_state['lambda_cost_weight'] = st.slider(
+            "Cost Weight (Lambda - higher means more cost-averse)",
+            0.0, 0.5, st.session_state['lambda_cost_weight'], 0.01
+        )
+
+        if st.button("Optimize Learning Pathway"):
+            current_top_role = st.session_state['top_role']['Role']
+            current_hr_for_top_role = st.session_state['top_role']['HR_Score']
+            st.session_state['initial_air_optimal_role'] = st.session_state['top_role']['AI_R_Score']
+
+            alice_current_vr_subscores_normalized = {
+                'ai_fluency': st.session_state['alice_ai_fluency_score'],
+                'domain_expertise': st.session_state['alice_domain_expertise_score'],
+                'adaptive_capacity': st.session_state['alice_adaptive_capacity_score']
+            }
+
+            st.session_state['recommended_paths'], \
+            st.session_state['total_time_invested'], \
+            st.session_state['total_cost_invested'], \
+            st.session_state['projected_air'], \
+            st.session_state['final_vr_after_paths'], \
+            st.session_state['final_vr_subscores_normalized'], \
+            st.session_state['final_skills_after_paths'] = optimize_learning_pathways(
+                st.session_state['initial_air_optimal_role'], # Use the correct initial AI-R here
+                st.session_state['alice_vr_score'],
+                alice_current_vr_subscores_normalized,
+                current_hr_for_top_role,
+                st.session_state['learning_pathways_df'],
+                st.session_state['max_learning_time_hours'],
+                st.session_state['max_learning_budget_usd'],
+                ALPHA, BETA, st.session_state['lambda_cost_weight'],
+                st.session_state['alice_profile']['experience_years'],
+                st.session_state['alice_profile']['current_skills']
+            )
+            st.success("Learning pathway optimized!")
+            st.experimental_rerun()
+        
+        if st.session_state['recommended_paths']:
+            st.subheader("3.2. Recommended Optimal Learning Pathway")
+            for i, path in enumerate(st.session_state['recommended_paths']):
+                st.markdown(f"**{i+1}. {path['pathway_name']}** (Type: {path['type']}, Time: {path['estimated_time_hours']}h, Cost: ${path['estimated_cost_usd']})")
+            st.markdown(f"**Total estimated time investment:** {st.session_state['total_time_invested']} hours")
+            st.markdown(f"**Total estimated cost investment:** ${st.session_state['total_cost_invested']}")
+            st.markdown(f"**Initial AI-R for {st.session_state['top_role']['Role']}:** {st.session_state['initial_air_optimal_role']:.2f}")
+            st.markdown(f"**Projected AI-R after pathways:** {st.session_state['projected_air']:.2f} (Improvement: {(st.session_state['projected_air'] - st.session_state['initial_air_optimal_role']):.2f})")
+
+            # Plot Current vs. Projected AI-R
+            fig_optim, ax_optim = plt.subplots(figsize=(8, 6))
+            bar_width = 0.35
+            roles = [st.session_state['top_role']['Role']]
+            current_airs = [st.session_state['initial_air_optimal_role']]
+            projected_airs = [st.session_state['projected_air']]
+
+            index = np.arange(len(roles))
+
+            bar1 = ax_optim.bar(index, current_airs, bar_width, label='Current AI-R', color='skyblue')
+            bar2 = ax_optim.bar(index + bar_width, projected_airs, bar_width, label='Projected AI-R', color='lightcoral')
+
+            ax_optim.set_xlabel('Role')
+            ax_optim.set_ylabel('AI-Readiness Score')
+            ax_optim.set_title(f'Current vs. Projected AI-R for {st.session_state["top_role"]["Role"]} After Optimized Learning')
+            ax_optim.set_xticks(index + bar_width / 2)
+            ax_optim.set_xticklabels(roles)
+            ax_optim.set_ylim(0, 100)
+            ax_optim.legend()
+
+            for bar in bar1 + bar2:
+                yval = bar.get_height()
+                ax_optim.text(bar.get_x() + bar.get_width()/2, yval + 1, round(yval, 2), ha='center', va='bottom')
+
+            plt.tight_layout()
+            st.pyplot(fig_optim)
+            plt.close(fig_optim)
+
+            st.markdown(f"The optimization algorithm has identified an optimal sequence of learning pathways for Alice, aiming to maximize her AI-R for the **{st.session_state['top_role']['Role']}** role within her time and budget constraints.")
+            st.markdown(f"These pathways project an AI-R increase from {st.session_state['initial_air_optimal_role']:.2f} to {st.session_state['projected_air']:.2f}.")
+            st.markdown(f"This represents a significant uplift in her overall readiness and marketability for her chosen high-opportunity role. The bar chart visually demonstrates this substantial projected improvement, confirming that the learning investment is expected to yield a positive return on her career trajectory.")
+        else:
+            st.info("No learning pathways recommended within the specified constraints or no top role identified yet.")
+
+# --- Tab 5: "What-If" Scenario Analysis ---
+with tab5:
+    st.header("4. 'What-If' Scenario Analysis")
+    st.markdown(f"Alice wants to explore alternative career and learning strategies beyond the initial optimal recommendation. The 'What-If' scenario engine allows her to compare different choices, understand trade-offs, and see how they impact her projected AI-R. This functionality helps in making robust career decisions.")
+
+    if st.session_state['alice_vr_score'] is None:
+        st.warning("Please go to 'Profile & Goals' tab and calculate initial readiness.")
+    else:
+        st.subheader("4.1. Define Custom Scenarios")
+        st.markdown(f"You can define custom 'What-If' scenarios by selecting a target role and a specific set of learning pathways.")
+        
+        all_pathway_names = st.session_state['learning_pathways_df']['pathway_name'].tolist()
+        all_roles_for_scenario = st.session_state['systematic_df']['role'].unique().tolist()
+
+        scenario_col1, scenario_col2 = st.columns(2)
+        with scenario_col1:
+            scenario_target_role = st.selectbox(
+                "Select a Target Role for this Scenario",
+                options=all_roles_for_scenario,
+                index=all_roles_for_scenario.index(st.session_state['top_role']['Role']) if st.session_state['top_role'] else 0,
+                key='scenario_role_select'
+            )
+        with scenario_col2:
+            selected_pathway_names_scenario = st.multiselect(
+                "Select Learning Pathways for this Scenario",
+                options=all_pathway_names,
+                default=[],
+                key='scenario_pathways_select'
+            )
+        
+        custom_scenario_pathways = st.session_state['learning_pathways_df'][
+            st.session_state['learning_pathways_df']['pathway_name'].isin(selected_pathway_names_scenario)
+        ].to_dict('records')
+
+        if st.button("Run Custom Scenario Analysis"):
+            if not selected_pathway_names_scenario:
+                st.warning("Please select at least one learning pathway for the custom scenario.")
+            else:
+                projected_air_custom, time_custom, cost_custom, projected_vr_custom, hr_custom, synergy_custom = run_what_if_scenario(
+                    st.session_state['alice_vr_score'], 
+                    {
+                        'ai_fluency': st.session_state['alice_ai_fluency_score'],
+                        'domain_expertise': st.session_state['alice_domain_expertise_score'],
+                        'adaptive_capacity': st.session_state['alice_adaptive_capacity_score']
+                    },
+                    st.session_state['alice_profile']['current_skills'],
+                    scenario_target_role, st.session_state['hr_scores'], 
+                    st.session_state['skill_requirements_df'], 
+                    custom_scenario_pathways,
+                    st.session_state['alice_profile']['experience_years'], 
+                    ALPHA, BETA
+                )
+
+                # Include the optimal pathway as a baseline scenario if available
+                scenario_results_list = []
+                if st.session_state['recommended_paths']:
+                    scenario_results_list.append({
+                        'Scenario': 'Optimized for ' + st.session_state['top_role']['Role'],
+                        'Target Role': st.session_state['top_role']['Role'],
+                        'Projected AI-R': st.session_state['projected_air'],
+                        'Projected VR': st.session_state['final_vr_after_paths'],
+                        'HR': st.session_state['top_role']['HR_Score'],
+                        'Time (h)': st.session_state['total_time_invested'],
+                        'Cost ($)': st.session_state['total_cost_invested']
+                    })
+                
+                scenario_results_list.append({
+                    'Scenario': 'Custom Scenario',
+                    'Target Role': scenario_target_role,
+                    'Projected AI-R': projected_air_custom,
+                    'Projected VR': projected_vr_custom,
+                    'HR': hr_custom,
+                    'Time (h)': time_custom,
+                    'Cost ($)': cost_custom
+                })
+                
+                st.session_state['scenario_results_df'] = pd.DataFrame(scenario_results_list).round(2)
+
+                # Calculate ROI for scenarios
+                roi_data = []
+                for index, row in st.session_state['scenario_results_df'].iterrows():
+                    initial_air = st.session_state['top_role']['AI_R_Score'] if row['Target Role'] == st.session_state['top_role']['Role'] else st.session_state['air_df'][st.session_state['air_df']['Role'] == row['Target Role']]['AI_R_Score'].iloc[0]
+                    air_gain = row['Projected AI-R'] - initial_air
+                    
+                    normalized_cost = row['Cost ($)'] / st.session_state['max_learning_budget_usd'] if st.session_state['max_learning_budget_usd'] > 0 else 0
+                    normalized_time = row['Time (h)'] / st.session_state['max_learning_time_hours'] if st.session_state['max_learning_time_hours'] > 0 else 0
+                    
+                    investment_factor = (normalized_cost * st.session_state['lambda_cost_weight']) + normalized_time
+                    
+                    if investment_factor > 0:
+                        roi = air_gain / investment_factor
+                    else:
+                        roi = air_gain
+                    
+                    roi_data.append({'Scenario': row['Scenario'], 'AI-R Gain': air_gain, 'Investment Score': investment_factor, 'ROI': roi})
+                st.session_state['roi_df'] = pd.DataFrame(roi_data).round(2)
+
+                st.success("Custom scenario analysis complete!")
+                st.experimental_rerun()
+        
+        if not st.session_state['scenario_results_df'].empty:
+            st.subheader("4.2. Scenario Analysis Results")
+            st.dataframe(st.session_state['scenario_results_df'])
+
+            fig_scenario, ax_scenario = plt.subplots(figsize=(12, 7))
+            bar_positions = np.arange(len(st.session_state['scenario_results_df']))
+            bars = ax_scenario.bar(bar_positions, st.session_state['scenario_results_df']['Projected AI-R'], color=sns.color_palette('viridis', len(st.session_state['scenario_results_df'])))
+
+            ax_scenario.set_ylabel('Projected AI-Readiness Score')
+            ax_scenario.set_title('Comparative Projected AI-R for Different Career/Learning Scenarios')
+            ax_scenario.set_xticks(bar_positions)
+            ax_scenario.set_xticklabels(st.session_state['scenario_results_df']['Scenario'], rotation=45, ha='right')
+            ax_scenario.set_ylim(0, 100)
+
+            for bar in bars:
+                yval = bar.get_height()
+                ax_scenario.text(bar.get_x() + bar.get_width()/2, yval + 1, round(yval, 2), ha='center', va='bottom')
+
+            plt.tight_layout()
+            st.pyplot(fig_scenario)
+            plt.close(fig_scenario)
+
+            st.markdown(f"The 'What-If' analysis provides Alice with critical insights into the strategic implications of her choices.")
+            if 'Optimized for ' + st.session_state['top_role']['Role'] in st.session_state['scenario_results_df']['Scenario'].values:
+                optimal_air = st.session_state['scenario_results_df'][st.session_state['scenario_results_df']['Scenario'] == 'Optimized for ' + st.session_state['top_role']['Role']]['Projected AI-R'].iloc[0]
+                st.markdown(f"*   **Optimized for {st.session_state['top_role']['Role']} (Original Plan):** This scenario yielded a high projected AI-R of **{optimal_air:.2f}**, confirming it as a very effective strategy. The investment, while substantial, leads to significant career readiness.")
+            st.markdown(f"The comparative bar chart clearly illustrates these differences in projected AI-R, allowing Alice to visually grasp the outcomes.")
+
+            st.subheader("4.3. Return on Learning Investment (ROI)")
+            st.dataframe(st.session_state['roi_df'])
+
+            fig_roi, ax_roi = plt.subplots(figsize=(12, 7))
+            sns.barplot(x='Scenario', y='ROI', data=st.session_state['roi_df'], palette='magma', ax=ax_roi)
+            ax_roi.set_ylabel('ROI (AI-R Gain / Weighted Investment)')
+            ax_roi.set_title('Return on Learning Investment for Different Scenarios')
+            ax_roi.set_xticklabels(st.session_state['roi_df']['Scenario'], rotation=45, ha='right')
+
+            for index, row in st.session_state['roi_df'].iterrows():
+                ax_roi.text(index, row['ROI'] + 0.5, f"{row['ROI']:.2f}", color='black', ha="center")
+
+            plt.tight_layout()
+            st.pyplot(fig_roi)
+            plt.close(fig_roi)
+            st.markdown(f"The ROI chart further clarifies which investments provide the best 'bang for her buck.' The optimal pathway, despite higher upfront investment, likely offers a superior long-term return due to the significant AI-R boost it provides.")
+            st.markdown(f"This analysis empowers Alice to make a data-driven decision, weighing the projected career opportunity against the required investment in time and cost.")
+
+
+# --- Tab 6: Summary Report ---
+with tab6:
+    st.header("5. Personalized AI Career Strategy Report for Alice")
+    st.markdown(f"This section consolidates all the analysis into a clear, actionable report for Alice, summarizing her current standing, identified skill gaps, and the recommended optimal learning pathway with projected outcomes.")
+
+    if st.session_state['alice_vr_score'] is None:
+        st.warning("Please complete the previous steps to generate a full report.")
+    else:
+        st.subheader("5.1. Current AI-Readiness Profile")
+        st.markdown(f"**Idiosyncratic Readiness (VR):** {st.session_state['alice_vr_score']:.2f}")
+        st.markdown(f"  *   AI-Fluency: {st.session_state['alice_ai_fluency_score']:.2f}")
+        st.markdown(f"  *   Domain-Expertise: {st.session_state['alice_domain_expertise_score']:.2f}")
+        st.markdown(f"  *   Adaptive-Capacity: {st.session_state['alice_adaptive_capacity_score']:.2f}")
+        st.markdown(f"**Systematic Opportunity (HR) by Role:**")
+        for role, score in st.session_state['hr_scores'].items():
+            st.markdown(f"  *   {role}: {score:.2f}")
+
+        if st.session_state['top_role']:
+            st.subheader("5.2. Top AI-Enabled Career Path Recommendation")
+            st.markdown(f"**Recommended Role:** {st.session_state['top_role']['Role']}")
+            st.markdown(f"**Initial AI-Readiness Score (AI-R):** {st.session_state['top_role']['AI_R_Score']:.2f}")
+            if st.session_state['projected_air'] is not None:
+                st.markdown(f"**Projected AI-Readiness Score (AI-R) after Optimal Learning:** {st.session_state['projected_air']:.2f}")
+                st.markdown(f"**Estimated AI-R Improvement:** {(st.session_state['projected_air'] - st.session_state['top_role']['AI_R_Score']):.2f} points")
+            else:
+                st.markdown(f"*(Run 'Learning Optimization' to see projected AI-R after pathways)*")
+
+            st.subheader(f"5.3. Detailed Skill Gaps for {st.session_state['top_role']['Role']}")
+            st.markdown(f"(Comparing Alice's current skills vs. required for this role)")
+            top_role_skills_gaps_df = pd.DataFrame(st.session_state['all_skill_gaps'][st.session_state['top_role']['Role']]).T
+            top_role_skills_gaps_df['Gap'] = top_role_skills_gaps_df['required'] - top_role_skills_gaps_df['current']
+            st.dataframe(top_role_skills_gaps_df[top_role_skills_gaps_df['Gap'] > 0].sort_values(by='Gap', ascending=False))
+            st.markdown(f"(Skills with a positive 'Gap' need development)")
+
+            st.subheader("5.4. Recommended Optimal Learning Pathway")
+            if st.session_state['recommended_paths']:
+                for i, path in enumerate(st.session_state['recommended_paths']):
+                    st.markdown(f"**{i+1}. {path['pathway_name']}** (Type: {path['type']})")
+                st.markdown(f"**Total Estimated Time Investment:** {st.session_state['total_time_invested']} hours")
+                st.markdown(f"**Total Estimated Cost Investment:** ${st.session_state['total_cost_invested']}")
+            else:
+                st.markdown(f"No optimal learning pathways identified within current constraints or not yet calculated.")
+
+            st.subheader("5.5. 'What-If' Scenario Analysis Summary")
+            if not st.session_state['scenario_results_df'].empty:
+                st.dataframe(st.session_state['scenario_results_df'].set_index('Scenario'))
+                st.markdown("Insight: The 'Optimized for AI Quant Analyst' pathway (original recommendation) yields the highest projected AI-R, indicating it's the most effective strategy for maximizing Alice's career opportunity.")
+                st.markdown("The 'Return on Learning Investment' chart suggests prioritizing pathways with high impact on core VR components that align with high HR roles.")
+            else:
+                st.markdown(f"*(Run 'What-If Analysis' to see comparative scenarios)*")
+
+    st.markdown("---")
+    st.markdown("**--- End of Report ---**")
+
+```
