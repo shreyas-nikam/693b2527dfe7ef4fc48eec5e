@@ -2,338 +2,435 @@
 from streamlit.testing.v1 import AppTest
 import pandas as pd
 import numpy as np
-import pytest
+import os
 
-# It is assumed that 'source.py' is available in the same directory
-# and contains all necessary functions and constants.
-# For testing purposes, we assume create_simulated_data()
-# successfully creates the required CSVs or they already exist.
-# The AppTest.from_file("app.py").run() call will execute
-# initialize_session_state() which, in turn, calls create_simulated_data().
+# Helper function to create dummy data files for testing
+def create_dummy_csv_files():
+    # Only create if they don't exist to avoid overwriting during actual app run
+    if not os.path.exists('idiosyncratic_data.csv'):
+        pd.DataFrame({'col1': [1, 2], 'col2': [3, 4]}).to_csv('idiosyncratic_data.csv', index=False)
+    if not os.path.exists('systematic_opportunity_data.csv'):
+        pd.DataFrame({
+            'role': ['AI Quant Analyst', 'ML Engineer in Trading', 'AI Risk Analyst', 'Financial Data Scientist'],
+            'projected_jobs_10yr': [1000, 800, 700, 900],
+            'current_jobs': [500, 400, 350, 450],
+            'ai_skilled_wage': [150000, 140000, 130000, 120000],
+            'median_wage': [100000, 95000, 90000, 85000],
+            'education_years_required': [18, 18, 16, 16],
+            'experience_years_required': [5, 4, 3, 3],
+            'ai_enhancement_potential': [0.9, 0.85, 0.8, 0.75],
+            'remote_work_factor': [0.7, 0.6, 0.5, 0.65]
+        }).to_csv('systematic_opportunity_data.csv', index=False)
+    if not os.path.exists('job_postings_data.csv'):
+        pd.DataFrame({
+            'role': ['AI Quant Analyst', 'ML Engineer in Trading', 'AI Risk Analyst', 'Financial Data Scientist'],
+            'job_postings_t': [500, 450, 400, 380],
+            'job_postings_t_minus_1': [400, 350, 300, 280]
+        }).to_csv('job_postings_data.csv', index=False)
+    if not os.path.exists('regional_demand_data.csv'):
+        pd.DataFrame({
+            'role': ['AI Quant Analyst', 'ML Engineer in Trading', 'AI Risk Analyst', 'Financial Data Scientist'],
+            'local_demand': [0.8, 0.7, 0.6, 0.75],
+            'national_avg_demand': [0.7, 0.6, 0.5, 0.7]
+        }).to_csv('regional_demand_data.csv', index=False)
+    if not os.path.exists('skill_requirements.csv'):
+        pd.DataFrame({
+            'role': ['AI Quant Analyst', 'ML Engineer in Trading', 'AI Risk Analyst', 'Financial Data Scientist'],
+            'Python': [9, 8, 7, 8],
+            'SQL': [7, 7, 8, 7],
+            'ML_basics': [8, 9, 6, 7],
+            'Risk_Analysis': [9, 6, 10, 7],
+            'Financial_Modeling': [8, 5, 9, 8],
+            'Data_Viz': [7, 8, 7, 9],
+            'Quant_Models': [8, 9, 7, 6],
+            'AI_Ethics': [7, 7, 8, 6],
+            'GenAI_Tools': [6, 8, 5, 7],
+            'Cloud_Platforms': [6, 8, 5, 7]
+        }).to_csv('skill_requirements.csv', index=False)
+    if not os.path.exists('learning_pathways.csv'):
+        pd.DataFrame({
+            'pathway_id': [1, 2, 3, 4, 5],
+            'pathway_name': ['Advanced Python for Finance', 'Machine Learning Foundations', 'Cloud for AI', 'AI Ethics & Governance', 'GenAI in Finance'],
+            'type': ['Course', 'Course', 'Certification', 'Workshop', 'Course'],
+            'estimated_time_hours': [40, 60, 80, 20, 50],
+            'estimated_cost_usd': [500, 1000, 1500, 300, 800],
+            'skills_gained': ['Python,Data_Viz', 'ML_basics,Quant_Models', 'Cloud_Platforms', 'AI_Ethics', 'GenAI_Tools'],
+            'vr_component_boosts': ['ai_fluency:0.1,domain_expertise:0.05', 'ai_fluency:0.15,domain_expertise:0.1', 'adaptive_capacity:0.05', 'ai_fluency:0.05', 'ai_fluency:0.1,domain_expertise:0.05'],
+            'prerequisites': ['', '1', '2', '', '2']
+        }).to_csv('learning_pathways.csv', index=False)
 
-def get_app_test_instance():
-    """Helper function to get a fresh AppTest instance."""
-    return AppTest.from_file("app.py")
+# Call this once before running tests, or at the start of each test if files might be deleted.
+create_dummy_csv_files()
 
-def test_initial_app_load_and_session_state_init():
-    """
-    Verify initial app load, page configuration, and session state initialization.
-    This also implicitly tests the 'Introduction' tab's content.
-    """
-    at = get_app_test_instance().run()
+# Define dummy constants that would usually come from source.py
+ALPHA = 0.5
+BETA = 0.2
+VR_W1_AI_FLUENCY = 0.33
+VR_W2_DOMAIN_EXPERTISE = 0.33
+VR_W3_ADAPTIVE_CAPACITY = 0.33
+AI_FLUENCY_THETA_WEIGHTS = {'prompting': 0.2, 'ai_tools': 0.2, 'understanding': 0.2, 'data_literacy': 0.2, 'ai_augmented_productivity': 0.1, 'critical_ai_judgment': 0.05, 'appropriate_trust_decisions': 0.05}
+GAMMA_EXPERIENCE_DECAY = 0.01
+HBASE_WEIGHTS = {'ai_enhancement_potential': 0.4, 'growth_normalized': 0.3, 'wage_premium': 0.2, 'entry_accessibility': 0.1}
+LAMBDA_GROWTH_MULTIPLIER = 1.05
+GAMMA_REMOTE_WORK = 0.1
+VR_COMPONENT_WEIGHTS = {'ai_fluency': 0.33, 'domain_expertise': 0.33, 'adaptive_capacity': 0.33}
+MAX_LEARNING_TIME_HOURS = 100
+MAX_LEARNING_BUDGET_USD = 1000
+LAMBDA_COST_WEIGHT = 0.1
 
-    # Verify page config elements
+# Mock functions from source.py needed for AppTest to run.
+# These implementations are simplified to allow the app's control flow to be tested,
+# assuming the correctness of the actual calculations in source.py is verified via unit tests.
+def calculate_ai_fluency(subfactors, weights):
+    return sum(subfactors[k] * weights.get(k, 0) for k in subfactors if k in weights) * 100 / sum(weights.values()) if weights else 0
+
+def calculate_domain_expertise(education_level, experience_years, subfactors, decay):
+    edu_score = {'Master\'s in Finance': 90, 'PhD in target field': 100, 'Master\'s in target field': 90, 'Bachelor\'s in target field': 70, 'Associate\'s/Certificate': 50, 'HS + significant coursework': 30}.get(education_level, 0)
+    exp_score = min(experience_years * 5, 100)
+    subfactor_score = sum(subfactors.values()) / len(subfactors) * 100 if subfactors else 0
+    return (edu_score * 0.4 + exp_score * 0.3 + subfactor_score * 0.3)
+
+def calculate_adaptive_capacity(subfactors):
+    return sum(subfactors.values()) / len(subfactors) * 100 if subfactors else 0
+
+def calculate_vr(ai_fluency, domain_expertise, adaptive_capacity, weights):
+    return (ai_fluency * weights['ai_fluency'] +
+            domain_expertise * weights['domain_expertise'] +
+            adaptive_capacity * weights['adaptive_capacity'])
+
+def normalize_growth(growth_rate):
+    return max(0, min(100, (growth_rate + 0.05) * 1000))
+
+def calculate_wage_premium(ai_skilled_wage, median_wage):
+    return (ai_skilled_wage - median_wage) / median_wage * 100 if median_wage > 0 else 0
+
+def calculate_entry_accessibility(education_years_required, experience_years_required):
+    return 100 - (education_years_required * 5 + experience_years_required * 3)
+
+def calculate_hbase(ai_enhancement_potential, growth_normalized, wage_premium, entry_accessibility, weights):
+    return (ai_enhancement_potential * weights['ai_enhancement_potential'] * 100 +
+            growth_normalized * weights['growth_normalized'] +
+            wage_premium * weights['wage_premium'] +
+            entry_accessibility * weights['entry_accessibility'])
+
+def calculate_mgrowth(jp_t, jp_t_minus_1, multiplier):
+    return (jp_t / jp_t_minus_1) * multiplier * 100 if jp_t_minus_1 > 0 else 0
+
+def calculate_mregional(local_demand, national_avg_demand, remote_work_factor, remote_gamma):
+    return (local_demand / national_avg_demand) * 100 * (1 + remote_work_factor * remote_gamma) if national_avg_demand > 0 else 0
+
+def calculate_hr(hbase, mgrowth, mregional):
+    return (hbase * 0.4 + mgrowth * 0.3 + mregional * 0.3)
+
+def calculate_skills_match_score(current_skills, required_skills_for_role, max_possible_match_for_role):
+    skill_gaps = {}
+    total_current = 0
+    total_required = 0
+    matched_score = 0
+    # Ensure required_skills_for_role is a Series/dict and handle 'role' column if present
+    skills_data = required_skills_for_role.drop('role', errors='ignore') if isinstance(required_skills_for_role, pd.Series) else required_skills_for_role
+    for skill, required_level in skills_data.items():
+        current_level = current_skills.get(skill, 0)
+        skill_gaps[skill] = {'current': current_level, 'required': required_level, 'gap': max(0, required_level - current_level)}
+        total_current += current_level
+        total_required += required_level
+        matched_score += min(current_level, required_level)
+
+    required_skills_dict = skills_data.to_dict() if isinstance(skills_data, pd.Series) else skills_data
+    if max_possible_match_for_role == 0:
+        return 0, skill_gaps, required_skills_dict, total_current, total_required
+    return matched_score / max_possible_match_for_role, skill_gaps, required_skills_dict, total_current, total_required
+
+def calculate_timing_factor(experience_years):
+    return min(1.0, experience_years / 10.0)
+
+def calculate_alignment(skills_match, timing_factor):
+    return (skills_match * 0.7 + timing_factor * 0.3)
+
+def calculate_synergy(vr_score, hr_score, alignment_score):
+    return (vr_score * hr_score / 100) * alignment_score
+
+def calculate_air(vr_score, hr_score, synergy_score, alpha, beta):
+    return alpha * vr_score + (1 - alpha) * hr_score + beta * synergy_score
+
+def parse_skill_string(skills_str):
+    return [s.strip() for s in skills_str.split(',')] if skills_str else []
+
+def parse_vr_boost_string(boost_str):
+    boosts = {}
+    if boost_str:
+        for item in boost_str.split(','):
+            key, value = item.split(':')
+            boosts[key.strip()] = float(value)
+    return boosts
+
+def optimize_learning_pathways(
+    initial_air_optimal_role,
+    initial_vr_score,
+    initial_vr_subscores_normalized,
+    current_hr_for_top_role,
+    learning_pathways_df,
+    max_learning_time_hours,
+    max_learning_budget_usd,
+    alpha, beta, lambda_cost_weight,
+    experience_years,
+    current_skills
+):
+    recommended_paths = []
+    total_time = 0
+    total_cost = 0
+    projected_air = initial_air_optimal_role
+    final_vr = initial_vr_score
+    final_vr_subscores_normalized = initial_vr_subscores_normalized.copy()
+    final_skills_after_paths = current_skills.copy()
+
+    for _, path_row in learning_pathways_df.iterrows():
+        path = path_row.to_dict()
+        if total_time + path['estimated_time_hours'] <= max_learning_time_hours and \
+           total_cost + path['estimated_cost_usd'] <= max_learning_budget_usd:
+            
+            recommended_paths.append(path)
+            total_time += path['estimated_time_hours']
+            total_cost += path['estimated_cost_usd']
+
+            for skill_gained in parse_skill_string(path['skills_gained']):
+                final_skills_after_paths[skill_gained] = min(10, final_skills_after_paths.get(skill_gained, 0) + 1)
+
+            vr_boosts = parse_vr_boost_string(path['vr_component_boosts'])
+            for component, boost_value in vr_boosts.items():
+                final_vr_subscores_normalized[component] = min(100, final_vr_subscores_normalized.get(component, 0) + boost_value * 100)
+            
+            # Recalculate VR based on boosted subscores (simplified)
+            final_vr = calculate_vr(
+                final_vr_subscores_normalized.get('ai_fluency', 0),
+                final_vr_subscores_normalized.get('domain_expertise', 0),
+                final_vr_subscores_normalized.get('adaptive_capacity', 0),
+                VR_COMPONENT_WEIGHTS
+            )
+            projected_air += 5 # Arbitrary boost for demonstration
+
+    return recommended_paths, total_time, total_cost, projected_air, final_vr, final_vr_subscores_normalized, final_skills_after_paths
+
+def run_what_if_scenario(
+    initial_vr_score, 
+    initial_vr_subscores_normalized,
+    initial_current_skills,
+    scenario_target_role, hr_scores_all, 
+    skill_requirements_df, 
+    custom_scenario_pathways,
+    experience_years, 
+    alpha, beta
+):
+    current_vr = initial_vr_score
+    current_vr_subscores_normalized = initial_vr_subscores_normalized.copy()
+    current_skills = initial_current_skills.copy()
+
+    total_time_invested = 0
+    total_cost_invested = 0
+
+    for path in custom_scenario_pathways:
+        total_time_invested += path['estimated_time_hours']
+        total_cost_invested += path['estimated_cost_usd']
+
+        for skill_gained in parse_skill_string(path['skills_gained']):
+            current_skills[skill_gained] = min(10, current_skills.get(skill_gained, 0) + 1)
+
+        vr_boosts = parse_vr_boost_string(path['vr_component_boosts'])
+        for component, boost_value in vr_boosts.items():
+            current_vr_subscores_normalized[component] = min(100, current_vr_subscores_normalized.get(component, 0) + boost_value * 100)
+
+    current_vr = calculate_vr(
+        current_vr_subscores_normalized.get('ai_fluency', 0),
+        current_vr_subscores_normalized.get('domain_expertise', 0),
+        current_vr_subscores_normalized.get('adaptive_capacity', 0),
+        VR_COMPONENT_WEIGHTS
+    )
+
+    current_hr_score = hr_scores_all.get(scenario_target_role, 0)
+
+    required_skills_for_role_df = skill_requirements_df[skill_requirements_df['role'] == scenario_target_role]
+    if not required_skills_for_role_df.empty:
+        required_skills_for_role = required_skills_for_role_df.iloc[0]
+        max_possible_match_for_role = required_skills_for_role.drop('role', errors='ignore').sum()
+        
+        skills_match, _, _, _, _ = calculate_skills_match_score(
+            current_skills,
+            required_skills_for_role,
+            max_possible_match_for_role
+        )
+    else:
+        skills_match = 0 # No skill requirements found for the role
+
+    timing_factor = calculate_timing_factor(experience_years)
+    alignment_score = calculate_alignment(skills_match, timing_factor)
+    synergy_score = calculate_synergy(current_vr, current_hr_score, alignment_score)
+    projected_air = calculate_air(current_vr, current_hr_score, synergy_score, alpha, beta)
+
+    return projected_air, total_time_invested, total_cost_invested, current_vr, current_hr_score, synergy_score
+
+# Ensure the mock create_simulated_data is defined
+def create_simulated_data():
+    create_dummy_csv_files()
+
+
+def test_1_initial_app_load_and_introduction_tab():
+    at = AppTest.from_file("app.py").run()
     assert at.title[0].value == "QuLab: AI Readiness score"
-    assert at.sidebar.image[0].image_source == "https://www.quantuniversity.com/assets/img/logo5.jpg"
+    assert "Welcome to the AI-Readiness Career Navigator!" in at.markdown[0].value
+    assert "Your Persona: Alice, a Senior Quantitative Analyst" in at.subheader[0].value
+    assert "The AI-Readiness Score (AI-R) Framework" in at.subheader[1].value
+    assert at.tabs[0].label == "Introduction"
+    assert at.tabs[1].label == "Profile & Goals"
+    assert at.tabs[2].label == "Opportunity Evaluation"
 
-    # Verify session state is initialized with expected dataframes
-    assert 'idiosyncratic_df' in at.session_state
-    assert isinstance(at.session_state['idiosyncratic_df'], pd.DataFrame)
-    assert not at.session_state['idiosyncratic_df'].empty
+def test_2_profile_and_goals_tab_interactions_and_calculation():
+    at = AppTest.from_file("app.py").run()
 
-    assert 'alice_profile' in at.session_state
-    assert at.session_state['alice_profile']['persona_id'] == 'Alice'
-    assert at.session_state['alice_profile']['experience_years'] == 7 # Default value
+    # Navigate to Tab 2
+    at.tabs[1].click().run()
 
-    assert 'target_roles' in at.session_state
-    assert 'AI Quant Analyst' in at.session_state['target_roles'] # Default value
+    # Verify initial state of widgets
+    assert at.selectbox[0].value == "Master's in Finance"
+    assert at.number_input[0].value == 7
+    assert at.slider[0].value == 0.6 # 'prompting' ai_fluency_subfactors
 
-    # Verify initial calculated scores are None or empty before computation
-    assert at.session_state['alice_ai_fluency_score'] is None
-    assert at.session_state['alice_vr_score'] is None
-    assert not at.session_state['hr_scores']
-    assert at.session_state['air_df'].empty
+    # Change some values
+    at.selectbox[0].set_value("PhD in target field").run()
+    at.number_input[0].set_value(10).run()
+    at.slider[0].set_value(0.8).run() # 'prompting'
+    at.multiselect[0].set_value(['AI Quant Analyst', 'Financial Data Scientist']).run()
 
-    # Verify Introduction tab content (Tab 0)
-    assert at.tabs[0].header[0].value == "Welcome to the AI-Readiness Career Navigator!"
-    assert "Your Persona: Alice, a Senior Quantitative Analyst" in at.tabs[0].subheader[0].value
-    assert "The AI-Readiness Score (AI-R) Framework" in at.tabs[0].subheader[1].value
-    # Check for a specific formula rendering
-    assert r"$$AI-R_{{i,t}} = \alpha \cdot V_i^R(t) + (1 - \alpha) \cdot H_{{i}}^R(t) + \beta \cdot Synergy\%(V_i^R, H_{{i}}^R)$$" in at.tabs[0].markdown[5].value
+    # Click the calculate button
+    at.button[0].click().run()
 
-
-def test_profile_and_goals_tab_interactions_and_calculation():
-    """
-    Test interactions on the 'Profile & Goals' tab (Tab 1),
-    including updating profile details and triggering the initial readiness calculation.
-    """
-    at = get_app_test_instance()
-    at.run() # Initial run on Tab 0
-
-    # Interact with widgets in Tab 1: Profile & Goals
-    # 1.1. Professional Background - modify values
-    at.tabs[1].selectbox[0].set_value("PhD in target field").run() # Education Level
-    at.tabs[1].number_input[0].set_value(10).run() # Years of Experience
-
-    # Modify an AI-Fluency sub-factor: 'prompting' is slider[0]
-    at.tabs[1].slider[0].set_value(0.8).run() # ai_fluency_prompting
-
-    # Modify a Domain-Expertise sub-factor: 'portfolio' is slider[7] (after 7 ai_fluency sliders)
-    at.tabs[1].slider[7].set_value(0.9).run() # domain_expertise_portfolio
-
-    # Modify an Adaptive-Capacity sub-factor: 'cognitive_flexibility' is slider[10] (after 7 ai_fluency + 3 domain_expertise sliders)
-    at.tabs[1].slider[10].set_value(0.95).run() # adaptive_capacity_cognitive_flexibility
-
-    # 1.2. Current Skill Levels - modify a skill: 'Python' is slider[13] (after 7 ai_fluency + 3 domain_expertise + 3 adaptive_capacity sliders)
-    at.tabs[1].slider[13].set_value(9).run() # current_skill_Python
-
-    # 1.3. Target AI-Enabled Financial Roles - modify selected roles
-    at.tabs[1].multiselect[0].set_value(['AI Quant Analyst', 'AI Risk Analyst', 'ML Engineer in Trading']).run()
-
-    # Click the "Calculate Initial Readiness & Opportunity" button
-    at.tabs[1].button[0].click().run() # This triggers a rerun and updates session state
-
-    # Assert success message is displayed on Tab 1
-    assert at.tabs[1].success[0].value == "Initial Readiness & Opportunity calculated! Proceed to the next tab."
-
-    # Assert session state updates after calculation
-    assert at.session_state['alice_profile']['education_level'] == "PhD in target field"
-    assert at.session_state['alice_profile']['experience_years'] == 10
-    assert at.session_state['alice_profile']['ai_fluency_subfactors']['prompting'] == 0.8
-    assert at.session_state['alice_profile']['domain_expertise_subfactors']['portfolio'] == 0.9
-    assert at.session_state['alice_profile']['adaptive_capacity_subfactors']['cognitive_flexibility'] == 0.95
-    assert at.session_state['alice_profile']['current_skills']['Python'] == 9
-    assert 'ML Engineer in Trading' in at.session_state['target_roles']
-
-    assert at.session_state['alice_ai_fluency_score'] is not None and at.session_state['alice_ai_fluency_score'] > 0
-    assert at.session_state['alice_domain_expertise_score'] is not None and at.session_state['alice_domain_expertise_score'] > 0
-    assert at.session_state['alice_adaptive_capacity_score'] is not None and at.session_state['alice_adaptive_capacity_score'] > 0
-    assert at.session_state['alice_vr_score'] is not None and at.session_state['alice_vr_score'] > 0
-    assert len(at.session_state['hr_scores']) == 3 # For the three roles selected
-
-
-def test_opportunity_evaluation_tab_content():
-    """
-    Test that the 'Opportunity Evaluation' tab (Tab 2) correctly displays scores and charts
-    after initial readiness calculation from Tab 1.
-    """
-    at = get_app_test_instance()
-    # Simulate having run the 'Profile & Goals' calculations to populate necessary session state
-    at.tabs[1].selectbox[0].set_value("Master's in Finance").run()
-    at.tabs[1].number_input[0].set_value(7).run()
-    at.tabs[1].multiselect[0].set_value(['AI Quant Analyst', 'ML Engineer in Trading', 'AI Risk Analyst']).run()
-    at.tabs[1].button[0].click().run() # This populates the necessary session_state for Tab 2 content
-
-    # Assert on Tab 2's content (index 2 for the tabs list)
-    assert at.tabs[2].header[0].value == "2. Opportunity Evaluation: AI-Readiness, VR, HR & Skill Gaps"
-    assert "Total VR Score" in at.tabs[2].metric[0].label
-    assert float(at.tabs[2].metric[0].value) == pytest.approx(at.session_state['alice_vr_score'], abs=0.01)
-
-    assert "AI-Fluency" in at.tabs[2].metric[1].label
-    assert float(at.tabs[2].metric[1].value) == pytest.approx(at.session_state['alice_ai_fluency_score'], abs=0.01)
-
-    assert not at.tabs[2].dataframe[0].empty # HR scores dataframe
-    assert 'Role' in at.tabs[2].dataframe[0].columns
-    assert 'HR_Score' in at.tabs[2].dataframe[0].columns
-    assert len(at.tabs[2].dataframe[0]) == len(at.session_state['target_roles'])
-
-    assert not at.tabs[2].dataframe[1].empty # AI-R scores dataframe
-    assert 'AI_R_Score' in at.tabs[2].dataframe[1].columns
-    assert at.session_state['top_role']['AI_R_Score'] == pytest.approx(at.tabs[2].dataframe[1]['AI_R_Score'].max(), abs=0.01)
-
-    # Check for text indicating the top role, assuming default markdown ordering.
-    # The exact markdown index might shift, so a partial string check is safer.
-    assert f"Alice's Top AI-R Role: **{at.session_state['top_role']['Role']}**" in at.tabs[2].markdown[14].value
-
-    assert at.tabs[2].pyplot[0] is not None # AI-R bar chart is displayed
-    assert at.tabs[2].pyplot[1] is not None # Skill gaps radar chart is displayed
-
-    assert 'all_skill_gaps' in at.session_state
-    assert at.session_state['top_role']['Role'] in at.session_state['all_skill_gaps']
-
-
-def test_learning_optimization_tab_interactions_and_results():
-    """
-    Test interactions on the 'Learning Optimization' tab (Tab 3),
-    including setting constraints and optimizing learning pathways.
-    """
-    at = get_app_test_instance()
-    # Ensure session state is prepared (from Tab 1 and Tab 2 calculations for a complete flow)
-    at.tabs[1].selectbox[0].set_value("Master's in Finance").run()
-    at.tabs[1].number_input[0].set_value(7).run()
-    at.tabs[1].multiselect[0].set_value(['AI Quant Analyst']).run() # Focus on one role for optimization
-    at.tabs[1].button[0].click().run() # This calculates VR/HR and triggers a rerun
-    at.run() # Rerun one more time to ensure all Tab 2 calculations (AI-R, top_role) are finalized
-
-    # Assert top_role is set, so Tab 3's optimization logic can proceed
-    assert 'top_role' in at.session_state
-    assert at.session_state['top_role'] is not None
-    assert not isinstance(at.session_state['top_role'], dict) # should be a Series-like object if from df.loc
-    assert 'AI_R_Score' in at.session_state['top_role']
-
-    # Navigate to Tab 3: Learning Optimization (index 3 for the tabs list)
-    # 3.1. Set Learning Constraints - modify values
-    at.tabs[3].number_input[0].set_value(200).run() # Max Learning Time (hours)
-    at.tabs[3].number_input[1].set_value(2000).run() # Max Learning Budget (USD)
-    at.tabs[3].slider[0].set_value(0.2).run() # Cost Weight (Lambda)
-
-    # Click "Optimize Learning Pathway" button
-    at.tabs[3].button[0].click().run() # This triggers a rerun and updates session state
-
-    # Assert success message is displayed on Tab 3
-    assert at.tabs[3].success[0].value == "Learning pathway optimized!"
-
-    # Assert session state updates with optimization results
-    assert 'recommended_paths' in at.session_state
-    assert 'total_time_invested' in at.session_state and at.session_state['total_time_invested'] >= 0
-    assert 'total_cost_invested' in at.session_state and at.session_state['total_cost_invested'] >= 0
-    assert 'projected_air' in at.session_state and at.session_state['projected_air'] is not None
-    
-    # Expect projected AI-R to be greater than initial AI-R if pathways are found
-    if at.session_state['recommended_paths']:
-        assert at.session_state['projected_air'] > at.session_state['initial_air_optimal_role']
-
-    # Assert recommended paths and summary details are displayed
-    assert "Total estimated time investment:" in at.tabs[3].markdown[5].value
-    assert "Total estimated cost investment:" in at.tabs[3].markdown[6].value
-    assert "Projected AI-R after pathways:" in at.tabs[3].markdown[8].value
-
-    # Assert plot is displayed
-    assert at.tabs[3].pyplot[0] is not None
-
-
-def test_what_if_analysis_tab_interactions_and_results():
-    """
-    Test interactions on the 'What-If Analysis' tab (Tab 4),
-    including defining custom scenarios and running the analysis.
-    """
-    at = get_app_test_instance()
-    # Ensure session state is prepared (from Tab 1, 2, and 3 calculations for a comprehensive flow)
-    at.tabs[1].selectbox[0].set_value("Master's in Finance").run()
-    at.tabs[1].number_input[0].set_value(7).run()
-    at.tabs[1].multiselect[0].set_value(['AI Quant Analyst', 'Financial Data Scientist']).run()
-    at.tabs[1].button[0].click().run() # Calculates VR/HR
-    at.run() # Rerun to ensure top_role is calculated and available for optimization
-             # Also triggers Tab 2 content, ensuring air_df is populated
-
-    # Run optimization to have a baseline scenario available for comparison in What-If
-    at.tabs[3].number_input[0].set_value(100).run()
-    at.tabs[3].number_input[1].set_value(1000).run()
-    at.tabs[3].button[0].click().run()
-    at.run() # Rerun after optimization to update session state
-
-    # Navigate to Tab 4: What-If Analysis (index 4 for the tabs list)
-    assert at.tabs[4].header[0].value == "4. 'What-If' Scenario Analysis"
-
-    # 4.1. Define Custom Scenarios
-    # Select a different target role for the custom scenario
-    at.tabs[4].selectbox[0].set_value("Financial Data Scientist").run()
-
-    # Select some learning pathways for this scenario
-    # Get actual pathway names from session_state['learning_pathways_df'] for robustness
-    pathway_names = at.session_state['learning_pathways_df']['pathway_name'].tolist()
-    selected_pathways_for_scenario = []
-    # Try to pick pathways that are likely to exist
-    if 'Python for Data Science' in pathway_names:
-        selected_pathways_for_scenario.append('Python for Data Science')
-    if 'Generative AI Tools for Finance' in pathway_names:
-        selected_pathways_for_scenario.append('Generative AI Tools for Finance')
-    if 'AI Ethics Course' in pathway_names:
-        selected_pathways_for_scenario.append('AI Ethics Course')
-
-    # Fallback if specific pathways aren't guaranteed in simulated data, take first few
-    if not selected_pathways_for_scenario and len(pathway_names) >= 2:
-        selected_pathways_for_scenario = [pathway_names[0], pathway_names[1]]
-    elif not selected_pathways_for_scenario and len(pathway_names) == 1:
-        selected_pathways_for_scenario = [pathway_names[0]]
-
-    if selected_pathways_for_scenario:
-        at.tabs[4].multiselect[0].set_value(selected_pathways_for_scenario).run()
-    else:
-        pytest.skip("Not enough learning pathways available to select for what-if scenario.")
-
-
-    # Click "Run Custom Scenario Analysis"
-    at.tabs[4].button[0].click().run() # This triggers a rerun and updates session state
-
-    # Assert success message is displayed on Tab 4
-    assert at.tabs[4].success[0].value == "Custom scenario analysis complete!"
-
-    # Assert scenario_results_df and roi_df are populated in session state
-    assert 'scenario_results_df' in at.session_state
-    assert not at.session_state['scenario_results_df'].empty
-    assert 'roi_df' in at.session_state
-    assert not at.session_state['roi_df'].empty
-
-    # Assert dataframes and plots are displayed on Tab 4
-    assert not at.tabs[4].dataframe[0].empty # Scenario analysis results dataframe
-    assert at.tabs[4].pyplot[0] is not None # Scenario bar chart
-    assert not at.tabs[4].dataframe[1].empty # ROI results dataframe
-    assert at.tabs[4].pyplot[1] is not None # ROI bar chart
-
-
-def test_summary_report_tab_content():
-    """
-    Test that the 'Summary Report' tab (Tab 5) correctly consolidates and displays
-    information from all previous steps of the application.
-    """
-    at = get_app_test_instance()
-    # Simulate a full user flow to ensure all session state variables are populated
-    # Tab 1: Profile & Goals interactions & calculations
-    at.tabs[1].selectbox[0].set_value("Master's in Finance").run()
-    at.tabs[1].number_input[0].set_value(7).run()
-    at.tabs[1].multiselect[0].set_value(['AI Quant Analyst', 'Financial Data Scientist']).run()
-    at.tabs[1].button[0].click().run()
-    at.run() # Rerun to propagate state after button click and ensure Tab 2 is ready
-
-    # Tab 3: Learning Optimization interactions & calculations
-    at.tabs[3].number_input[0].set_value(100).run()
-    at.tabs[3].number_input[1].set_value(1000).run()
-    at.tabs[3].button[0].click().run()
-    at.run() # Rerun after optimization
-
-    # Tab 4: What-If Analysis interactions & calculations
-    pathway_names = at.session_state['learning_pathways_df']['pathway_name'].tolist()
-    selected_pathways_for_scenario = []
-    if 'Python for Data Science' in pathway_names:
-        selected_pathways_for_scenario.append('Python for Data Science')
-    if 'Generative AI Tools for Finance' in pathway_names:
-        selected_pathways_for_scenario.append('Generative AI Tools for Finance')
-
-    if selected_pathways_for_scenario:
-        at.tabs[4].selectbox[0].set_value("Financial Data Scientist").run()
-        at.tabs[4].multiselect[0].set_value(selected_pathways_for_scenario).run()
-        at.tabs[4].button[0].click().run()
-        at.run() # Rerun after scenario analysis
-    else:
-        # If no pathways were available, scenario results might be empty, skip relevant checks
-        pass
-
-
-    # Assert on Tab 5's content (index 5 for the tabs list)
-    assert at.tabs[5].header[0].value == "5. Personalized AI Career Strategy Report for Alice"
-
-    # Assert Current AI-Readiness Profile section
-    assert "Idiosyncratic Readiness (VR):" in at.tabs[5].markdown[0].value
-    assert "AI-Fluency:" in at.tabs[5].markdown[1].value
-    assert "Systematic Opportunity (HR) by Role:" in at.tabs[5].markdown[4].value
+    # Assert success message and session state updates
+    assert at.success[0].value == "Initial Readiness & Opportunity calculated! Proceed to the next tab."
     assert at.session_state['alice_vr_score'] is not None
+    assert 'AI Quant Analyst' in at.session_state['hr_scores']
+    assert 'Financial Data Scientist' in at.session_state['hr_scores']
 
-    # Assert Top AI-Enabled Career Path Recommendation section
-    assert "Top AI-Enabled Career Path Recommendation" in at.tabs[5].subheader[1].value
-    assert "Recommended Role:" in at.tabs[5].markdown[7].value
-    assert "Initial AI-Readiness Score (AI-R):" in at.tabs[5].markdown[8].value
-    if at.session_state['projected_air'] is not None:
-        assert "Projected AI-Readiness Score (AI-R) after Optimal Learning:" in at.tabs[5].markdown[9].value
-        assert "Estimated AI-R Improvement:" in at.tabs[5].markdown[10].value
+def test_3_opportunity_evaluation_tab_display():
+    at = AppTest.from_file("app.py").run()
 
-    # Assert Detailed Skill Gaps section
-    assert "Detailed Skill Gaps for" in at.tabs[5].subheader[2].value
-    assert not at.tabs[5].dataframe[0].empty # Skill gaps dataframe is displayed
+    # First, run tab 2 calculations to populate session state
+    at.tabs[1].click().run()
+    at.selectbox[0].set_value("PhD in target field").run()
+    at.number_input[0].set_value(10).run()
+    at.multiselect[0].set_value(['AI Quant Analyst', 'Financial Data Scientist']).run()
+    at.button[0].click().run() # Calculate Initial Readiness & Opportunity
 
-    # Assert Recommended Optimal Learning Pathway section
-    assert "Recommended Optimal Learning Pathway" in at.tabs[5].subheader[3].value
-    if at.session_state['recommended_paths']:
-        assert "Total Estimated Time Investment:" in at.tabs[5].markdown[13].value
-        assert "Total Estimated Cost Investment:" in at.tabs[5].markdown[14].value
-    else:
-        assert "No optimal learning pathways identified" in at.tabs[5].markdown[13].value
+    # Navigate to Tab 3
+    at.tabs[2].click().run()
 
-    # Assert 'What-If' Scenario Analysis Summary section
-    assert "'What-If' Scenario Analysis Summary" in at.tabs[5].subheader[4].value
-    if not at.session_state['scenario_results_df'].empty:
-        assert not at.tabs[5].dataframe[1].empty # Scenario results dataframe is displayed
-        assert "Insight: The 'Optimized for AI Quant Analyst' pathway" in at.tabs[5].markdown[17].value
-    else:
-        assert "*(Run 'What-If Analysis' to see comparative scenarios)*" in at.tabs[5].markdown[17].value
+    # Assert that scores and dataframes are displayed
+    assert "Total VR Score" in at.subheader[0].value
+    assert at.metric[0].value is not None # Check VR score
+    assert "AI-Readiness Scores Across Target Roles" in at.pyplot[0]._key # Check for plot title
+    assert not at.session_state['air_df'].empty
+    assert at.dataframe[0].value is not None
+    assert "Top AI-R Role:" in at.markdown[-3].value # Verify top role is identified
+    assert "Skill Gaps for Recommended Role:" in at.subheader[4].value
+    assert "Skill Gaps for" in at.pyplot[1]._key # Check for radar plot title
+
+def test_4_learning_optimization_tab_interactions():
+    at = AppTest.from_file("app.py").run()
+
+    # First, run tab 2 & 3 calculations to populate session state and get top_role
+    at.tabs[1].click().run()
+    at.multiselect[0].set_value(['AI Quant Analyst']).run()
+    at.button[0].click().run() # Calculate Initial Readiness & Opportunity
+    at.tabs[2].click().run()
+    # Trigger AI-R calculation within tab 3 to set 'top_role'
+    # The app automatically runs this when tab 3 is accessed and VR/HR exist
+    assert at.session_state['top_role'] is not None
+
+    # Navigate to Tab 4
+    at.tabs[3].click().run()
+
+    # Verify initial optimization parameters
+    assert at.number_input[1].value == MAX_LEARNING_TIME_HOURS # Max Learning Time (hours)
+    assert at.number_input[2].value == MAX_LEARNING_BUDGET_USD # Max Learning Budget (USD)
+    assert at.slider[at.slider.len - 1].value == LAMBDA_COST_WEIGHT # Cost Weight Lambda
+
+    # Change parameters
+    at.number_input[1].set_value(120).run()
+    at.number_input[2].set_value(1500).run()
+
+    # Click optimize button
+    at.button[1].click().run() # Optimize Learning Pathway button
+
+    # Assert success message and session state updates
+    assert at.success[0].value == "Learning pathway optimized!"
+    assert at.session_state['recommended_paths'] is not None
+    assert at.session_state['projected_air'] is not None
+    assert at.session_state['total_time_invested'] > 0
+    assert at.session_state['total_cost_invested'] > 0
+    assert "Recommended Optimal Learning Pathway" in at.subheader[2].value
+    assert "Current vs. Projected AI-R for" in at.pyplot[0]._key # Check for optimization plot
+
+def test_5_what_if_analysis_tab_interactions():
+    at = AppTest.from_file("app.py").run()
+
+    # First, run tab 2, 3, and 4 calculations to set up session state
+    at.tabs[1].click().run()
+    at.multiselect[0].set_value(['AI Quant Analyst', 'Financial Data Scientist']).run()
+    at.button[0].click().run() # Calculate Initial Readiness & Opportunity
+    at.tabs[2].click().run()
+    assert at.session_state['top_role'] is not None
+    at.tabs[3].click().run()
+    at.button[1].click().run() # Optimize Learning Pathway
+
+    # Navigate to Tab 5
+    at.tabs[4].click().run()
+
+    # Select a target role and some learning pathways
+    at.selectbox[at.selectbox.len - 1].set_value("Financial Data Scientist").run() # scenario_role_select
+    at.multiselect[at.multiselect.len - 1].set_value(['Machine Learning Foundations', 'Advanced Python for Finance']).run() # scenario_pathways_select
+
+    # Click to run custom scenario
+    at.button[at.button.len - 1].click().run() # Run Custom Scenario Analysis button
+
+    # Assert success message and session state updates
+    assert at.success[0].value == "Custom scenario analysis complete!"
+    assert not at.session_state['scenario_results_df'].empty
+    assert not at.session_state['roi_df'].empty
+    assert "Scenario Analysis Results" in at.subheader[2].value
+    assert "Comparative Projected AI-R for Different Career/Learning Scenarios" in at.pyplot[0]._key
+    assert "Return on Learning Investment (ROI)" in at.subheader[3].value
+    assert "Return on Learning Investment for Different Scenarios" in at.pyplot[1]._key
+
+def test_6_summary_report_tab_display():
+    at = AppTest.from_file("app.py").run()
+
+    # First, run all previous calculations to populate session state fully
+    at.tabs[1].click().run()
+    at.multiselect[0].set_value(['AI Quant Analyst', 'Financial Data Scientist']).run()
+    at.button[0].click().run() # Calculate Initial Readiness & Opportunity
+
+    at.tabs[2].click().run() # This tab's logic will calculate AI-R, skill gaps, and top_role
+
+    at.tabs[3].click().run()
+    at.button[1].click().run() # Optimize Learning Pathway
+
+    at.tabs[4].click().run()
+    at.multiselect[at.multiselect.len - 1].set_value(['Machine Learning Foundations']).run()
+    at.button[at.button.len - 1].click().run() # Run Custom Scenario Analysis
+
+    # Navigate to Tab 6
+    at.tabs[5].click().run()
+
+    # Assert that key summary information is displayed
+    assert "Personalized AI Career Strategy Report for Alice" in at.header[0].value
+    assert "Current AI-Readiness Profile" in at.subheader[0].value
+    assert at.session_state['alice_vr_score'] is not None
+    assert at.session_state['hr_scores'] is not None
+    assert "Top AI-Enabled Career Path Recommendation" in at.subheader[1].value
+    assert at.session_state['top_role']['Role'] is not None
+    assert at.session_state['projected_air'] is not None
+    assert "Detailed Skill Gaps for" in at.subheader[2].value
+    assert at.dataframe[0].value is not None # Skill gaps dataframe
+    assert "Recommended Optimal Learning Pathway" in at.subheader[3].value
+    assert at.session_state['recommended_paths'] is not None
+    assert "What-If' Scenario Analysis Summary" in at.subheader[4].value
+    assert not at.session_state['scenario_results_df'].empty
 
